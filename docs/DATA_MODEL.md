@@ -76,7 +76,9 @@ folder is created, but faculty can:
 
 - add or remove count-variable items (e.g. Assignment 3, Assignment 4) to match
   the course's credit hours,
-- add/remove W/A/B sample slots on an item,
+- add/remove W/A/B sample slots on an item (a "slot" is a file within a
+  Worst/Average/Best group; a sample item counts complete only when all three
+  groups have at least one file),
 - mark an item `NOT_APPLICABLE` with an optional note (e.g. "no project this
   semester"). N/A items are skipped by the completeness check.
 

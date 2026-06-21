@@ -138,6 +138,36 @@ class ChecklistItem(models.Model):
     def __str__(self):
         return f"{self.title} ({self.folder.course})"
 
+    def sample_groups(self):
+        """For a W/A/B item, the three groups with their files (uses the
+        prefetched ``files`` so it adds no queries)."""
+        buckets = {SampleKind.WORST: [], SampleKind.AVERAGE: [], SampleKind.BEST: []}
+        for f in self.files.all():
+            if f.sample_kind in buckets:
+                buckets[f.sample_kind].append(f)
+        return [
+            {"kind": SampleKind.WORST, "label": "Worst", "files": buckets[SampleKind.WORST]},
+            {"kind": SampleKind.AVERAGE, "label": "Average", "files": buckets[SampleKind.AVERAGE]},
+            {"kind": SampleKind.BEST, "label": "Best", "files": buckets[SampleKind.BEST]},
+        ]
+
+    @property
+    def is_satisfied(self):
+        """Whether the item's evidence is complete (ignores N/A handling).
+
+        Sample items require a file in every W/A/B group; ordinary items just
+        need at least one file.
+        """
+        files = list(self.files.all())
+        if not files:
+            return False
+        if self.allows_samples:
+            kinds = {f.sample_kind for f in files}
+            return {
+                SampleKind.WORST, SampleKind.AVERAGE, SampleKind.BEST
+            }.issubset(kinds)
+        return True
+
 
 class SampleKind(models.TextChoices):
     """Worst/Average/Best grouping for sample items (used from Phase 5)."""

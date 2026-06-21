@@ -62,11 +62,22 @@ def save_item_file(item, uploaded_file, user, sample_kind=SampleKind.NONE):
     item_file.save()
 
     generate_thumbnail(item_file)
-
-    if item.status != ItemStatus.NOT_APPLICABLE and item.status != ItemStatus.AVAILABLE:
-        item.status = ItemStatus.AVAILABLE
-        item.save(update_fields=["status"])
+    recompute_item_status(item)
     return item_file
+
+
+def recompute_item_status(item):
+    """Set an item's status from its evidence (N/A is left untouched).
+
+    AVAILABLE when complete: sample items need all W/A/B groups; ordinary items
+    need at least one file. PENDING otherwise.
+    """
+    if item.status == ItemStatus.NOT_APPLICABLE:
+        return
+    new_status = ItemStatus.AVAILABLE if item.is_satisfied else ItemStatus.PENDING
+    if item.status != new_status:
+        item.status = new_status
+        item.save(update_fields=["status"])
 
 
 def generate_thumbnail(item_file):
@@ -103,9 +114,4 @@ def delete_item_file(item_file):
         item_file.thumbnail.delete(save=False)
     item_file.delete()
 
-    if (
-        item.status == ItemStatus.AVAILABLE
-        and not item.files.exists()
-    ):
-        item.status = ItemStatus.PENDING
-        item.save(update_fields=["status"])
+    recompute_item_status(item)

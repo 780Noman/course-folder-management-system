@@ -13,8 +13,20 @@ from django.views.decorators.http import require_POST
 
 from academics.models import Course
 
-from .models import ChecklistItem, CourseFolder, ItemFile, ItemStatus, Phase
-from .services import delete_item_file, get_or_create_folder, save_item_file
+from .models import (
+    ChecklistItem,
+    CourseFolder,
+    ItemFile,
+    ItemStatus,
+    Phase,
+    SampleKind,
+)
+from .services import (
+    delete_item_file,
+    get_or_create_folder,
+    recompute_item_status,
+    save_item_file,
+)
 from .validators import validate_upload
 
 # Count-variable families faculty can grow/shrink to match the course.
@@ -39,7 +51,8 @@ def folder_detail(request, course_id):
     _require_folder_access(request, course)
 
     folder = get_or_create_folder(course)
-    items = list(folder.items.all())  # ordered by (order, id); single query
+    # Prefetch files so per-item file lists / sample groups add no extra queries.
+    items = list(folder.items.prefetch_related("files"))
 
     def section(label, phase, can_add):
         members = [i for i in items if i.phase == phase]
@@ -154,13 +167,21 @@ def file_upload(request, item_id):
         messages.error(request, "No file selected.")
         return redirect("folder_detail", course_id=item.folder.course_id)
 
+    # Sample (W/A/B) items require the target group; ordinary items ignore it.
+    sample_kind = SampleKind.NONE
+    if item.allows_samples:
+        sample_kind = request.POST.get("sample_kind", "")
+        if sample_kind not in {SampleKind.WORST, SampleKind.AVERAGE, SampleKind.BEST}:
+            messages.error(request, "Choose a sample group (Worst, Average, or Best).")
+            return redirect("folder_detail", course_id=item.folder.course_id)
+
     try:
         validate_upload(upload)
     except ValidationError as exc:
         messages.error(request, " ".join(exc.messages))
         return redirect("folder_detail", course_id=item.folder.course_id)
 
-    save_item_file(item, upload, request.user)
+    save_item_file(item, upload, request.user, sample_kind=sample_kind)
     messages.success(request, f"Uploaded “{upload.name}”.")
     return redirect("folder_detail", course_id=item.folder.course_id)
 
@@ -231,8 +252,10 @@ def item_mark_na(request, item_id):
 def item_clear_na(request, item_id):
     """Return an N/A item to pending (it counts toward completeness again)."""
     item = _get_item_for_edit(request, item_id)
+    # Leave N/A, then recompute from the actual uploaded evidence.
     item.status = ItemStatus.PENDING
     item.na_note = ""
     item.save(update_fields=["status", "na_note"])
+    recompute_item_status(item)
     messages.success(request, f"“{item.title}” marked applicable.")
     return redirect("folder_detail", course_id=item.folder.course_id)
