@@ -87,11 +87,15 @@ certificate is issued while a required item is missing.
 
 **User:** name, email (unique, used for login + invite), role, is_active.
 
-**Term:** name, season (SPRING|FALL|SUMMER), year, start_date, end_date,
-is_current.
+**Term:** season (SPRING|FALL|SUMMER), year, start_date, end_date, is_current.
+`name` is a derived property (e.g. "Spring 2026"); uniqueness is enforced on
+(season, year), and saving a term with `is_current=True` clears the flag on all
+other terms so exactly one term is current.
 
 **Course:** title, code, credit_hours, program, study_semester, section,
-instructor (FK), term (FK). Unique together: (code, section, term).
+instructor (FK, limited to FACULTY), term (FK). Unique together:
+(code, section, term). Both FKs use `PROTECT` so faculty and past terms with
+courses are never deleted (removing a faculty member deactivates them instead).
 
 **CourseFolder:** course (OneToOne), status, mid_submitted_at,
 mid_approved_at, final_submitted_at, certified_at.

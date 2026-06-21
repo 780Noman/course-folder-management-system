@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Terms &middot; Course Folder Management System{% endblock %}
+
+{% block content %}
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-gray-900">Terms</h1>
+      <p class="mt-1 text-sm text-gray-600">Create teaching terms and mark the current one.</p>
+    </div>
+    <a href="{% url 'admin_dashboard' %}"
+       class="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-900">&larr; Dashboard</a>
+  </div>
+
+  <div class="mt-6 grid gap-6 md:grid-cols-3">
+    <!-- Create form -->
+    <form method="post" class="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm md:col-span-1">
+      {% csrf_token %}
+      <h2 class="text-sm font-semibold text-gray-900">Add a term</h2>
+      {% if form.non_field_errors %}
+        <div class="rounded-md bg-red-50 p-2 text-sm text-red-700">{{ form.non_field_errors|striptags }}</div>
+      {% endif %}
+      <div>
+        <label for="{{ form.season.id_for_label }}" class="block text-sm font-medium text-gray-700">Season</label>
+        {{ form.season }}
+      </div>
+      <div>
+        <label for="{{ form.year.id_for_label }}" class="block text-sm font-medium text-gray-700">Year</label>
+        {{ form.year }}
+        {% if form.year.errors %}<p class="mt-1 text-sm text-red-700">{{ form.year.errors|striptags }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.start_date.id_for_label }}" class="block text-sm font-medium text-gray-700">Start date</label>
+        {{ form.start_date }}
+      </div>
+      <div>
+        <label for="{{ form.end_date.id_for_label }}" class="block text-sm font-medium text-gray-700">End date</label>
+        {{ form.end_date }}
+        {% if form.end_date.errors %}<p class="mt-1 text-sm text-red-700">{{ form.end_date.errors|striptags }}</p>{% endif %}
+      </div>
+      <label class="flex items-center gap-2 text-sm text-gray-700">
+        {{ form.is_current }} Mark as current term
+      </label>
+      <button type="submit"
+              class="w-full cursor-pointer rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
+        Add term
+      </button>
+    </form>
+
+    <!-- List -->
+    <div class="md:col-span-2">
+      <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+          <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+            <tr>
+              <th class="px-4 py-3">Term</th>
+              <th class="px-4 py-3">Dates</th>
+              <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for term in terms %}
+              <tr>
+                <td class="px-4 py-3 font-medium text-gray-900">{{ term.name }}</td>
+                <td class="px-4 py-3 text-gray-600">
+                  {% if term.start_date %}{{ term.start_date }} &ndash; {{ term.end_date|default:"?" }}{% else %}&mdash;{% endif %}
+                </td>
+                <td class="px-4 py-3">
+                  {% if term.is_current %}
+                    <span class="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Current</span>
+                  {% else %}
+                    <span class="text-xs text-gray-400">Past/Inactive</span>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-3 text-right">
+                  {% if not term.is_current %}
+                    <form method="post" action="{% url 'term_set_current' term.pk %}">
+                      {% csrf_token %}
+                      <button type="submit"
+                              class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
+                        Set current
+                      </button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="px-4 py-6 text-center text-gray-500">No terms yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

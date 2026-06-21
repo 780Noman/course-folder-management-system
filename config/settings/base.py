@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django_htmx",
     # Local
     "accounts",
+    "academics",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

@@ -4,12 +4,15 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, PasswordResetConfirmView
-from django.shortcuts import redirect, render
+from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.views.decorators.http import require_POST
 
 from . import ratelimit
 from .emails import send_invite_email
 from .forms import InviteForm
+from .models import User
 from .permissions import admin_required, faculty_required
 
 
@@ -73,6 +76,33 @@ class InviteSetPasswordView(PasswordResetConfirmView):
     success_url = reverse_lazy("dashboard")
 
 
+@admin_required
+def faculty_list(request):
+    """List faculty with search; add (invite) and deactivate/reactivate."""
+    query = request.GET.get("q", "").strip()
+    faculty = User.objects.filter(role=User.Role.FACULTY)
+    if query:
+        faculty = faculty.filter(Q(name__icontains=query) | Q(email__icontains=query))
+    faculty = faculty.annotate(course_count=Count("courses"))
+    return render(
+        request,
+        "accounts/faculty_list.html",
+        {"faculty": faculty, "q": query},
+    )
+
+
+@admin_required
+@require_POST
+def faculty_set_active(request, pk):
+    """Soft remove / restore a faculty member (preserves course history)."""
+    member = get_object_or_404(User, pk=pk, role=User.Role.FACULTY)
+    member.is_active = not member.is_active
+    member.save(update_fields=["is_active"])
+    state = "reactivated" if member.is_active else "deactivated"
+    messages.success(request, f"{member.name} {state}.")
+    return redirect("faculty_list")
+
+
 @login_required
 def dashboard_redirect(request):
     """Send each user to the dashboard for their role."""
@@ -88,4 +118,40 @@ def admin_dashboard(request):
 
 @faculty_required
 def faculty_dashboard(request):
-    return render(request, "accounts/dashboard_faculty.html")
+    """Faculty see their own courses, defaulting to the current term with a
+    switcher for the past terms they have taught in."""
+    from academics.models import Term
+
+    user = request.user
+    taught_term_ids = set(
+        user.courses.values_list("term_id", flat=True).distinct()
+    )
+    # Terms the faculty has taught in (most recent first), for the switcher.
+    terms = list(Term.objects.filter(pk__in=taught_term_ids))
+    current = Term.get_current()
+
+    selected = None
+    requested = request.GET.get("term")
+    if requested:
+        selected = next((t for t in terms if str(t.pk) == requested), None)
+    if selected is None:
+        if current and current.pk in taught_term_ids:
+            selected = current
+        elif terms:
+            selected = terms[0]  # most recent taught term
+
+    courses = (
+        user.courses.filter(term=selected).select_related("term")
+        if selected
+        else user.courses.none()
+    )
+    return render(
+        request,
+        "accounts/dashboard_faculty.html",
+        {
+            "courses": courses,
+            "terms": terms,
+            "selected_term": selected,
+            "current_term": current,
+        },
+    )

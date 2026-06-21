@@ -43,6 +43,12 @@ urlpatterns = [
     path("dashboard/admin/", views.admin_dashboard, name="admin_dashboard"),
     path("dashboard/faculty/", views.faculty_dashboard, name="faculty_dashboard"),
     # Faculty management / invites
+    path("manage/faculty/", views.faculty_list, name="faculty_list"),
+    path(
+        "manage/faculty/<int:pk>/set-active/",
+        views.faculty_set_active,
+        name="faculty_set_active",
+    ),
     path("manage/users/invite/", views.invite_user, name="invite_user"),
     path(
         "invite/<uidb64>/<token>/",
