@@ -4,7 +4,7 @@
     <div>
       <label for="f-term" class="block text-xs font-medium text-gray-600">Term</label>
       <select name="term" id="f-term"
-              class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900">
+              class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring">
         <option value="">All terms</option>
         {% for t in options.terms %}
           <option value="{{ t.pk }}" {% if selected.term_id == t.pk|stringformat:'s' %}selected{% endif %}>{{ t.name }}</option>
@@ -14,7 +14,7 @@
     <div>
       <label for="f-program" class="block text-xs font-medium text-gray-600">Program</label>
       <select name="program" id="f-program"
-              class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900">
+              class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring">
         <option value="">All programs</option>
         {% for p in options.programs %}
           <option value="{{ p }}" {% if selected.program == p %}selected{% endif %}>{{ p }}</option>
@@ -24,7 +24,7 @@
     <div>
       <label for="f-faculty" class="block text-xs font-medium text-gray-600">Faculty</label>
       <select name="faculty" id="f-faculty"
-              class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900">
+              class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring">
         <option value="">All faculty</option>
         {% for u in options.faculty %}
           <option value="{{ u.pk }}" {% if selected.instructor_id == u.pk|stringformat:'s' %}selected{% endif %}>{{ u.name }}</option>
@@ -34,7 +34,7 @@
     <div>
       <label for="f-status" class="block text-xs font-medium text-gray-600">Status</label>
       <select name="status" id="f-status"
-              class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900">
+              class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring">
         <option value="">All statuses</option>
         <option value="certified" {% if selected.status == 'certified' %}selected{% endif %}>Certified</option>
         <option value="in_review" {% if selected.status == 'in_review' %}selected{% endif %}>In review</option>
@@ -45,7 +45,7 @@
 
   <div class="mt-3 flex flex-wrap items-center gap-3">
     <button type="submit"
-            class="cursor-pointer rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
+            class="cursor-pointer rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-strong focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
       Apply filters
     </button>
     <a href="{% url 'report' %}" class="cursor-pointer text-sm text-gray-500 hover:text-gray-900">Clear</a>
@@ -53,11 +53,11 @@
     {% block export_controls %}{% endblock %}
     <span class="ml-auto flex gap-2">
       <a href="{% url 'report_export_pdf' %}?{{ request.GET.urlencode }}"
-         class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
+         class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
         Export PDF
       </a>
       <a href="{% url 'report_export_xlsx' %}?{{ request.GET.urlencode }}"
-         class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
+         class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
         Export Excel
       </a>
     </span>

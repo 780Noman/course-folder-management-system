@@ -11,7 +11,7 @@
     <form method="post" action="{% url 'logout' %}">
       {% csrf_token %}
       <button type="submit"
-              class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
+              class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
         Sign out
       </button>
     </form>
@@ -28,7 +28,7 @@
     <div class="flex items-center gap-2">
       <input type="search" name="q" id="q" value="{{ q }}" placeholder="Search my courses"
              autocomplete="off"
-             class="w-56 rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900">
+             class="w-56 rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring">
       {% if selected_term %}
         <span class="text-sm text-gray-600">in
           <span class="font-medium text-gray-900">{{ selected_term.name }}</span>
@@ -43,14 +43,14 @@
       <div class="flex items-center gap-2">
         <label for="term" class="text-sm text-gray-600">Term</label>
         <select name="term" id="term"
-                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900">
+                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring">
           {% for t in terms %}
             <option value="{{ t.pk }}" {% if selected_term and selected_term.pk == t.pk %}selected{% endif %}>
               {{ t.name }}{% if t == current_term %} (current){% endif %}
             </option>
           {% endfor %}
         </select>
-        <noscript><button type="submit" class="cursor-pointer rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white">Go</button></noscript>
+        <noscript><button type="submit" class="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white">Go</button></noscript>
       </div>
     {% endif %}
   </form>

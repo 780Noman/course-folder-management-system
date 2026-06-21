@@ -1,9 +1,34 @@
 /* Tailwind source. Compile to static/css/app.css with the Tailwind standalone
    CLI (see README "Building CSS"). The compiled file is what the templates load
-   and what WhiteNoise serves in production. */
+   and what WhiteNoise serves in production.
+
+   Design tokens and rationale: design-system/course-folder-management-system/MASTER.md */
+
+/* Fonts: Atkinson Hyperlegible (body, accessibility-first) + Crimson Pro (display). */
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Crimson+Pro:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  }
+  h1, h2, h3, h4 {
+    font-family: "Crimson Pro", Georgia, serif;
+  }
+}
+
 /* Hide Alpine.js elements until the framework initialises. */
 [x-cloak] { display: none !important; }
+
+/* Respect users who prefer reduced motion: remove transitions/animations. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

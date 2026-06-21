@@ -10,7 +10,7 @@
     </div>
     <div class="flex items-center gap-3">
       <a href="{% url 'invite_user' %}"
-         class="inline-flex cursor-pointer items-center rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
+         class="inline-flex cursor-pointer items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-strong focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
         Add faculty
       </a>
       <a href="{% url 'admin_dashboard' %}"
@@ -20,9 +20,9 @@
 
   <form method="get" class="mt-6 flex items-center gap-2">
     <input type="search" name="q" value="{{ q }}" placeholder="Search by name or email"
-           class="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900">
+           class="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring">
     <button type="submit"
-            class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
+            class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
       Search
     </button>
     {% if q %}
@@ -30,9 +30,9 @@
     {% endif %}
   </form>
 
-  <div class="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+  <div class="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
-      <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+      <thead class="bg-muted text-left text-xs font-medium uppercase tracking-wide text-gray-500">
         <tr>
           <th class="px-4 py-3">Name</th>
           <th class="px-4 py-3">Email</th>
@@ -58,7 +58,7 @@
               <form method="post" action="{% url 'faculty_set_active' member.pk %}">
                 {% csrf_token %}
                 <button type="submit"
-                        class="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2
+                        class="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
                         {% if member.is_active %}border-red-200 bg-white text-red-700 hover:bg-red-50{% else %}border-gray-300 bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                   {% if member.is_active %}Deactivate{% else %}Reactivate{% endif %}
                 </button>

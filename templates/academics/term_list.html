@@ -42,16 +42,16 @@
         {{ form.is_current }} Mark as current term
       </label>
       <button type="submit"
-              class="w-full cursor-pointer rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
+              class="w-full cursor-pointer rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-strong focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
         Add term
       </button>
     </form>
 
     <!-- List -->
     <div class="md:col-span-2">
-      <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
         <table class="min-w-full divide-y divide-gray-200 text-sm">
-          <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+          <thead class="bg-muted text-left text-xs font-medium uppercase tracking-wide text-gray-500">
             <tr>
               <th class="px-4 py-3">Term</th>
               <th class="px-4 py-3">Dates</th>
@@ -78,7 +78,7 @@
                     <form method="post" action="{% url 'term_set_current' term.pk %}">
                       {% csrf_token %}
                       <button type="submit"
-                              class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
+                              class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
                         Set current
                       </button>
                     </form>
