@@ -20,3 +20,7 @@ ALLOWED_HOSTS = env("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "[::1]"]
 
 # Show emails (invites, password resets) in the console during development.
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# WeasyPrint needs GTK, which is absent on typical local (Windows) machines;
+# use the pure-Python engine for local development and tests.
+PDF_ENGINE = "xhtml2pdf"

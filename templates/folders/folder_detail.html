@@ -79,7 +79,13 @@
       {% elif folder.status == 'FINAL_APPROVED' %}
         <p class="text-sm font-medium text-green-700">Both phases approved — awaiting certificate issuance.</p>
       {% elif folder.status == 'CERTIFIED' %}
-        <p class="text-sm font-medium text-green-700">This course folder is certified.</p>
+        <div class="flex flex-wrap items-center gap-3">
+          <p class="text-sm font-medium text-green-700">This course folder is certified.</p>
+          <a href="{% url 'certificate_download' course.pk %}"
+             class="cursor-pointer rounded-md border border-green-300 bg-white px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2">
+            Download certificate
+          </a>
+        </div>
       {% endif %}
     </div>
   {% endif %}

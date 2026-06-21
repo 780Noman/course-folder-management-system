@@ -133,6 +133,11 @@ sets its item AVAILABLE; deleting the last file reverts it to PENDING and
 removes the storage object(s).
 
 **Certificate:** folder (OneToOne), pdf (storage key), issued_by, issued_at.
+Issued by an admin only when the folder is FINAL_APPROVED and every required,
+applicable item is AVAILABLE; issuance renders the HTML certificate to PDF
+(WeasyPrint in production, xhtml2pdf fallback locally — see PDF_ENGINE), stores
+it privately, and moves the folder to CERTIFIED. Faculty (own course) and admins
+download it via the same guarded signed-URL/stream path as other files.
 
 **AuditLog:** actor (FK, nullable), action, target_type, target_id,
 metadata (json), created_at. Lives in the dependency-free `audit` app; written

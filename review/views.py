@@ -1,8 +1,10 @@
 """Review workflow views: faculty submissions and admin review."""
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -11,7 +13,7 @@ from accounts.permissions import admin_required
 from folders.models import CourseFolder, FolderStatus, ItemStatus, Phase
 from folders.services import get_or_create_folder
 
-from . import services
+from . import certificates, services
 
 
 def _require_owner(request, course):
@@ -156,3 +158,40 @@ def review_action(request, course_id):
         return redirect("review_detail", course_id=course.pk)
 
     return redirect("review_list")
+
+
+# --- Certificate -----------------------------------------------------------
+
+@admin_required
+@require_POST
+def certify(request, course_id):
+    """Admin issues the certificate (blocked unless the folder is eligible)."""
+    course = get_object_or_404(Course, pk=course_id)
+    folder = get_or_create_folder(course)
+    try:
+        certificates.issue_certificate(folder, request.user)
+        messages.success(request, "Certificate issued.")
+    except certificates.CertificationError as exc:
+        messages.error(request, str(exc))
+    return redirect("review_detail", course_id=course.pk)
+
+
+@login_required
+def certificate_download(request, course_id):
+    """Download the certificate PDF (course instructor or any admin)."""
+    course = get_object_or_404(
+        Course.objects.select_related("folder__certificate"), pk=course_id
+    )
+    if not (request.user.is_admin or course.instructor_id == request.user.id):
+        raise PermissionDenied
+    certificate = getattr(getattr(course, "folder", None), "certificate", None)
+    if certificate is None:
+        raise Http404("No certificate has been issued for this course.")
+
+    if settings.USE_S3:
+        return redirect(certificate.pdf.url)  # short-lived signed URL
+    certificate.pdf.open("rb")
+    return FileResponse(
+        certificate.pdf, content_type="application/pdf",
+        filename=f"{course.code}-{course.section}-certificate.pdf",
+    )

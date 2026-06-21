@@ -16,7 +16,11 @@ Pillow~=11.0
 django-htmx~=1.21
 
 # PDF certificate generation (HTML -> PDF)
+# WeasyPrint is the production engine (needs GTK; present in the Docker image).
+# xhtml2pdf is a pure-Python fallback for local dev/tests on Windows where GTK
+# is unavailable (see MANUAL_SETUP.md); the renderer picks whichever works.
 weasyprint~=63.0
+xhtml2pdf~=0.2.16
 
 # Excel report export
 openpyxl~=3.1

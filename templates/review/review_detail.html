@@ -18,7 +18,28 @@
        class="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-900">&larr; Review queue</a>
   </div>
 
-  {% if not reviewable %}
+  {% if folder.status == 'FINAL_APPROVED' %}
+    <div class="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-green-200 bg-green-50 p-4">
+      <p class="text-sm font-medium text-green-800">Both phases approved — ready to certify.</p>
+      <form method="post" action="{% url 'certify' course.pk %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="cursor-pointer rounded-md bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2">
+          Issue certificate
+        </button>
+      </form>
+    </div>
+  {% elif folder.status == 'CERTIFIED' %}
+    <div class="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-green-200 bg-green-50 p-4">
+      <p class="text-sm font-medium text-green-800">
+        Certified{% if folder.certified_at %} on {{ folder.certified_at|date:"d M Y" }}{% endif %}.
+      </p>
+      <a href="{% url 'certificate_download' course.pk %}"
+         class="cursor-pointer rounded-md border border-green-300 bg-white px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2">
+        Download certificate
+      </a>
+    </div>
+  {% elif not reviewable %}
     <p class="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
       This folder is not currently awaiting review. You are viewing it read-only.
     </p>

@@ -132,6 +132,10 @@ MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "media/"  # not routed publicly; files are served via a guarded view
 SIGNED_URL_TTL = env.int("SIGNED_URL_TTL", default=300)  # seconds
 
+# PDF engine for certificate generation: "auto" tries WeasyPrint then falls
+# back to xhtml2pdf where GTK is unavailable.
+PDF_ENGINE = env("PDF_ENGINE", default="auto")
+
 USE_S3 = bool(env("AWS_STORAGE_BUCKET_NAME", default=""))
 
 if USE_S3:

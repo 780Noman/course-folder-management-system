@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 2cm; }
+    body { font-family: "Helvetica", "Arial", sans-serif; color: #111; font-size: 11px; }
+    .header { text-align: center; border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 14px; }
+    .university { font-size: 15px; font-weight: bold; }
+    .institute { font-size: 12px; }
+    h1 { font-size: 16px; text-align: center; margin: 14px 0; text-transform: uppercase; letter-spacing: 1px; }
+    .meta { margin: 10px 0; line-height: 1.6; }
+    .meta b { display: inline-block; min-width: 90px; }
+    .rule { font-size: 10px; color: #333; margin: 6px 0 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    th, td { border: 1px solid #444; padding: 4px 6px; font-size: 10px; vertical-align: top; }
+    th { background: #eee; text-align: left; }
+    .sr { width: 26px; text-align: center; }
+    .avail { width: 54px; text-align: center; }
+    .legend { font-size: 9px; color: #444; margin-top: 6px; }
+    .signoff { margin-top: 28px; width: 100%; }
+    .signoff td { border: none; font-size: 11px; padding: 14px 0; }
+    .issued { margin-top: 18px; font-size: 10px; color: #444; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="university">PMAS Arid Agriculture University, Rawalpindi</div>
+    <div class="institute">University Institute of Information Technology (UIIT)</div>
+  </div>
+
+  <h1>Course Folder Review Certificate</h1>
+
+  <div class="meta">
+    It is certified that the contents (as given below) on the index page of the course
+    folder of
+    <b>{{ course.title }} ({{ course.code }})</b>
+    offered to
+    Program <b>{{ course.program }}</b>,
+    Semester <b>{{ course.study_semester }}</b>,
+    Section <b>{{ course.section }}</b>,
+    Term <b>{{ term.name }}</b>,
+    Instructor <b>{{ course.instructor.name }}</b>,
+    are attached to the course folder submitted to the department.
+  </div>
+  <div class="rule">Focal person has confirmed the availability of each item in the course folder.</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="sr">Sr#</th><th>Item</th><th class="avail">Available</th>
+        <th class="sr">Sr#</th><th>Item</th><th class="avail">Available</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for left, right in rows %}
+        <tr>
+          <td class="sr">{{ left.order }}</td>
+          <td>{{ left.title }}</td>
+          <td class="avail">{% if left.status == 'AVAILABLE' %}&#10004;{% elif left.status == 'NOT_APPLICABLE' %}N/A{% endif %}</td>
+          {% if right %}
+            <td class="sr">{{ right.order }}</td>
+            <td>{{ right.title }}</td>
+            <td class="avail">{% if right.status == 'AVAILABLE' %}&#10004;{% elif right.status == 'NOT_APPLICABLE' %}N/A{% endif %}</td>
+          {% else %}
+            <td class="sr"></td><td></td><td class="avail"></td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="legend">W = Worst, A = Average, B = Best &nbsp;&middot;&nbsp; &#10004; = Available, N/A = Not Applicable</div>
+
+  <table class="signoff">
+    <tr>
+      <td>Course Instructor: <b>{{ course.instructor.name }}</b><br><br>Signature: ____________________</td>
+      <td style="text-align:right;">Focal Person: <b>{{ issued_by_name }}</b><br><br>Signature: ____________________</td>
+    </tr>
+  </table>
+
+  <div class="issued">Issued on {{ issued_at|date:"d M Y" }}.</div>
+</body>
+</html>

@@ -11,4 +11,10 @@ urlpatterns = [
     path("review/", views.review_list, name="review_list"),
     path("review/<int:course_id>/", views.review_detail, name="review_detail"),
     path("review/<int:course_id>/action/", views.review_action, name="review_action"),
+    path("review/<int:course_id>/certify/", views.certify, name="certify"),
+    path(
+        "courses/<int:course_id>/certificate/",
+        views.certificate_download,
+        name="certificate_download",
+    ),
 ]
