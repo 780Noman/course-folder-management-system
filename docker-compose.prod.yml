@@ -1,0 +1,40 @@
+# Production-style stack for self-hosting (e.g. Hetzner + Coolify).
+# On managed PaaS (Render/Railway) you deploy the Dockerfile directly and use a
+# managed database instead of this `db` service.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Requires a .env with production values (see .env.example). Put a TLS-terminating
+# reverse proxy (Caddy/Traefik/Nginx) in front for HTTPS.
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-coursefolders}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

@@ -1,0 +1,36 @@
+# Keep the build context (and image) lean and free of local/dev cruft.
+.git
+.gitignore
+.gitattributes
+
+# Local Python / virtualenvs
+.venv
+venv
+env
+__pycache__
+*.py[cod]
+
+# Local DB, collected static (regenerated in-container), uploads
+*.sqlite3
+db.sqlite3
+/staticfiles/
+/media/
+
+# Tooling / caches
+.pytest_cache
+.coverage
+htmlcov
+/bin/
+.agents/
+.claude/
+.idea/
+.vscode/
+
+# Secrets must never enter the image
+.env
+*.pem
+
+# Docs and tests are not needed at runtime
+/docs/
+/tests/
+/design-system/

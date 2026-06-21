@@ -1,0 +1,6 @@
+# Keep shell scripts and Dockerfiles LF so they run in Linux containers,
+# regardless of the contributor's OS / core.autocrlf setting.
+*.sh text eol=lf
+docker/entrypoint.sh text eol=lf
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
