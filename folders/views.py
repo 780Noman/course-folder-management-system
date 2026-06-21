@@ -80,6 +80,9 @@ def folder_detail(request, course_id):
             "sections": sections,
             "overall": overall,
             "add_kinds": [("quiz", "quiz"), ("assignment", "assignment")],
+            "is_owner": course.instructor_id == request.user.id,
+            "mid_ready": folder.is_phase_complete(CourseFolder.MID_PHASES),
+            "final_ready": folder.is_phase_complete(CourseFolder.FINAL_PHASES),
         },
     )
 
@@ -229,7 +232,7 @@ def file_delete(request, file_id):
     item_file = _get_file_for_access(request, file_id)
     course_id = item_file.item.folder.course_id
     name = item_file.original_name
-    delete_item_file(item_file)
+    delete_item_file(item_file, user=request.user)
     messages.success(request, f"Deleted “{name}”.")
     return redirect("folder_detail", course_id=course_id)
 

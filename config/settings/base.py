@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     "accounts",
     "academics",
     "folders",
+    "review",
+    "audit",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

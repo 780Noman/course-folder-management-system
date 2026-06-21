@@ -5,6 +5,8 @@ from io import BytesIO
 from django.core.files.base import ContentFile
 from django.db import transaction
 
+from audit.services import record
+
 from .models import (
     ChecklistItem,
     ChecklistTemplateItem,
@@ -63,6 +65,8 @@ def save_item_file(item, uploaded_file, user, sample_kind=SampleKind.NONE):
 
     generate_thumbnail(item_file)
     recompute_item_status(item)
+    record(user, "file_upload", item_file, item=item.id,
+           name=item_file.original_name, sample_kind=item_file.sample_kind)
     return item_file
 
 
@@ -104,10 +108,11 @@ def generate_thumbnail(item_file):
     return item_file.thumbnail
 
 
-def delete_item_file(item_file):
+def delete_item_file(item_file, user=None):
     """Delete a file (and its thumbnail) from storage and the database, and
     reset the item to pending if it has no files left."""
     item = item_file.item
+    name = item_file.original_name
     # Remove the storage objects, then the row.
     item_file.file.delete(save=False)
     if item_file.thumbnail:
@@ -115,3 +120,4 @@ def delete_item_file(item_file):
     item_file.delete()
 
     recompute_item_status(item)
+    record(user, "file_delete", item, name=name)

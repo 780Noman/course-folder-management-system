@@ -13,13 +13,15 @@
     {% endif %}
     <span class="w-full truncate text-center text-[11px] text-gray-600">{{ f.original_name }}</span>
   </a>
-  <form method="post" action="{% url 'file_delete' f.pk %}"
-        onsubmit="return confirm('Delete “{{ f.original_name|escapejs }}”?');"
-        class="mt-1 text-center">
-    {% csrf_token %}
-    <button type="submit"
-            class="cursor-pointer text-[11px] font-medium text-gray-400 hover:text-red-700 focus:outline-none">
-      Delete
-    </button>
-  </form>
+  {% if not readonly %}
+    <form method="post" action="{% url 'file_delete' f.pk %}"
+          onsubmit="return confirm('Delete “{{ f.original_name|escapejs }}”?');"
+          class="mt-1 text-center">
+      {% csrf_token %}
+      <button type="submit"
+              class="cursor-pointer text-[11px] font-medium text-gray-400 hover:text-red-700 focus:outline-none">
+        Delete
+      </button>
+    </form>
+  {% endif %}
 </li>

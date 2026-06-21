@@ -1,0 +1,158 @@
+"""Review workflow views: faculty submissions and admin review."""
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from academics.models import Course
+from accounts.permissions import admin_required
+from folders.models import CourseFolder, FolderStatus, ItemStatus, Phase
+from folders.services import get_or_create_folder
+
+from . import services
+
+
+def _require_owner(request, course):
+    """Submitting is a faculty action on their own course."""
+    if course.instructor_id != request.user.id:
+        raise PermissionDenied
+
+
+@login_required
+@require_POST
+def submit_mid(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
+    _require_owner(request, course)
+    folder = get_or_create_folder(course)
+    try:
+        services.submit_mid(folder, request.user)
+        messages.success(request, "Mid-term submitted for review.")
+    except services.TransitionError as exc:
+        messages.error(request, str(exc))
+    return redirect("folder_detail", course_id=course.pk)
+
+
+@login_required
+@require_POST
+def submit_final(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
+    _require_owner(request, course)
+    folder = get_or_create_folder(course)
+    try:
+        services.submit_final(folder, request.user)
+        messages.success(request, "Final-term submitted for review.")
+    except services.TransitionError as exc:
+        messages.error(request, str(exc))
+    return redirect("folder_detail", course_id=course.pk)
+
+
+# --- Admin review ----------------------------------------------------------
+
+AWAITING_REVIEW = (FolderStatus.MID_SUBMITTED, FolderStatus.FINAL_SUBMITTED)
+
+
+@admin_required
+def review_list(request):
+    """Admin queue of folders awaiting review."""
+    folders = (
+        CourseFolder.objects.filter(status__in=AWAITING_REVIEW)
+        .select_related("course__instructor", "course__term")
+        .order_by("-course__term__year", "course__code")
+    )
+    return render(request, "review/review_list.html", {"folders": folders})
+
+
+def _build_review_sections(folder):
+    items = list(folder.items.prefetch_related("files"))
+    for item in items:
+        item.needs_attention = item.is_flagged or (
+            item.is_required
+            and item.status != ItemStatus.AVAILABLE
+            and item.status != ItemStatus.NOT_APPLICABLE
+        )
+
+    def section(label, phase):
+        members = [i for i in items if i.phase == phase]
+        return {
+            "label": label,
+            "phase": phase,
+            "items": members,
+            "progress": CourseFolder.progress(members),
+        }
+
+    return [
+        section("General", Phase.GENERAL),
+        section("Mid-term", Phase.MID),
+        section("Final-term", Phase.FINAL),
+    ]
+
+
+@admin_required
+def review_detail(request, course_id):
+    course = get_object_or_404(
+        Course.objects.select_related("instructor", "term"), pk=course_id
+    )
+    folder = get_or_create_folder(course)
+    sections = _build_review_sections(folder)
+    phase_label = ""
+    if folder.status == FolderStatus.MID_SUBMITTED:
+        phase_label = "Mid-term"
+    elif folder.status == FolderStatus.FINAL_SUBMITTED:
+        phase_label = "Final-term"
+    return render(
+        request,
+        "review/review_detail.html",
+        {
+            "course": course,
+            "folder": folder,
+            "sections": sections,
+            "reviewable": folder.status in AWAITING_REVIEW,
+            "review_phase_label": phase_label,
+        },
+    )
+
+
+def _collect_flagged_notes(request, folder):
+    """Read flag_<id>/note_<id> form fields into {item_id: note}."""
+    flagged = {}
+    for item in folder.items.all():
+        if request.POST.get(f"flag_{item.id}"):
+            flagged[item.id] = request.POST.get(f"note_{item.id}", "").strip()
+    return flagged
+
+
+@admin_required
+@require_POST
+def review_action(request, course_id):
+    """Approve or return the phase currently awaiting review."""
+    course = get_object_or_404(Course, pk=course_id)
+    folder = get_or_create_folder(course)
+    action = request.POST.get("action")
+
+    is_mid = folder.status == FolderStatus.MID_SUBMITTED
+    is_final = folder.status == FolderStatus.FINAL_SUBMITTED
+    if not (is_mid or is_final):
+        messages.error(request, "This folder is not awaiting review.")
+        return redirect("review_detail", course_id=course.pk)
+
+    try:
+        if action == "approve":
+            (services.approve_mid if is_mid else services.approve_final)(folder, request.user)
+            messages.success(request, "Phase approved.")
+        elif action == "return":
+            overall = request.POST.get("overall_note", "").strip()
+            flagged = _collect_flagged_notes(request, folder)
+            (services.return_mid if is_mid else services.return_final)(
+                folder, request.user, overall_note=overall, flagged_notes=flagged
+            )
+            messages.success(request, "Folder returned to the instructor.")
+        else:
+            messages.error(request, "Unknown review action.")
+            return redirect("review_detail", course_id=course.pk)
+    except services.TransitionError as exc:
+        messages.error(request, str(exc))
+        return redirect("review_detail", course_id=course.pk)
+
+    return redirect("review_list")

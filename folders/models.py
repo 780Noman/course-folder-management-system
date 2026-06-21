@@ -48,6 +48,7 @@ class FolderStatus(models.TextChoices):
     MID_SUBMITTED = "MID_SUBMITTED", "Mid-term submitted"
     MID_APPROVED = "MID_APPROVED", "Mid-term approved"
     FINAL_SUBMITTED = "FINAL_SUBMITTED", "Final-term submitted"
+    FINAL_APPROVED = "FINAL_APPROVED", "Final-term approved"
     CERTIFIED = "CERTIFIED", "Certified"
 
 
@@ -69,7 +70,11 @@ class CourseFolder(models.Model):
     mid_submitted_at = models.DateTimeField(null=True, blank=True)
     mid_approved_at = models.DateTimeField(null=True, blank=True)
     final_submitted_at = models.DateTimeField(null=True, blank=True)
+    final_approved_at = models.DateTimeField(null=True, blank=True)
     certified_at = models.DateTimeField(null=True, blank=True)
+    # Overall "return for revision" notes from the admin, per phase.
+    mid_return_note = models.TextField(blank=True)
+    final_return_note = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     # General setup items roll into the mid-term submission.
@@ -130,6 +135,9 @@ class ChecklistItem(models.Model):
         max_length=20, choices=ItemStatus.choices, default=ItemStatus.PENDING
     )
     na_note = models.TextField(blank=True)
+    # Admin review feedback: flag an item and explain what's wrong (shown red).
+    is_flagged = models.BooleanField(default=False)
+    review_note = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

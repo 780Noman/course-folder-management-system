@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Review queue &middot; Course Folder Management System{% endblock %}
+
+{% block content %}
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-gray-900">Review queue</h1>
+      <p class="mt-1 text-sm text-gray-600">Course folders submitted and awaiting your review.</p>
+    </div>
+    <a href="{% url 'admin_dashboard' %}"
+       class="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-900">&larr; Dashboard</a>
+  </div>
+
+  <div class="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-gray-200 text-sm">
+      <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+        <tr>
+          <th class="px-4 py-3">Course</th>
+          <th class="px-4 py-3">Instructor</th>
+          <th class="px-4 py-3">Term</th>
+          <th class="px-4 py-3">Awaiting</th>
+          <th class="px-4 py-3 text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for folder in folders %}
+          <tr>
+            <td class="px-4 py-3 font-medium text-gray-900">{{ folder.course.code }} / {{ folder.course.section }}</td>
+            <td class="px-4 py-3 text-gray-700">{{ folder.course.instructor.name }}</td>
+            <td class="px-4 py-3 text-gray-600">{{ folder.course.term.name }}</td>
+            <td class="px-4 py-3">
+              <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                {{ folder.get_status_display }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <a href="{% url 'review_detail' folder.course.pk %}"
+                 class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
+                Review
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="px-4 py-6 text-center text-gray-500">Nothing awaiting review.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

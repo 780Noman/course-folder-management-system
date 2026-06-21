@@ -18,7 +18,8 @@ Course          (one row per subject taught, per term, per section)
   └─ has one CourseFolder
 
 CourseFolder    (the checklist container for one Course)
-  ├─ status: DRAFT | MID_SUBMITTED | MID_APPROVED | FINAL_SUBMITTED | CERTIFIED
+  ├─ status: DRAFT | MID_SUBMITTED | MID_APPROVED | FINAL_SUBMITTED |
+  │          FINAL_APPROVED | CERTIFIED
   └─ has many ChecklistItems
 
 ChecklistItem   (one required/optional line of the checklist)
@@ -100,7 +101,12 @@ instructor (FK, limited to FACULTY), term (FK). Unique together:
 courses are never deleted (removing a faculty member deactivates them instead).
 
 **CourseFolder:** course (OneToOne), status, mid_submitted_at,
-mid_approved_at, final_submitted_at, certified_at.
+mid_approved_at, final_submitted_at, final_approved_at, certified_at,
+mid_return_note, final_return_note. Review lifecycle (strict, linear):
+DRAFT → MID_SUBMITTED → MID_APPROVED → FINAL_SUBMITTED → FINAL_APPROVED, then
+CERTIFIED at certificate issuance. Submitting mid requires all required
+General+Mid items; final is blocked until mid is approved. Returning a phase
+reverts it (mid→DRAFT, final→MID_APPROVED) with an overall note + per-item flags.
 
 **ChecklistItem:** folder (FK), template (FK, nullable), title, phase,
 is_required, order, allows_samples (bool, for W/A/B), is_removable (bool,
@@ -128,5 +134,11 @@ removes the storage object(s).
 
 **Certificate:** folder (OneToOne), pdf (storage key), issued_by, issued_at.
 
-**AuditLog:** actor (FK), action, target_type, target_id, metadata (json),
-created_at.
+**AuditLog:** actor (FK, nullable), action, target_type, target_id,
+metadata (json), created_at. Lives in the dependency-free `audit` app; written
+via `audit.services.record(...)`. Currently records the review lifecycle
+(submit/approve/return) and file upload/delete; coverage is extended in Phase 11.
+
+**ChecklistItem review fields (Phase 6):** is_flagged (bool), review_note (text)
+— set when an admin returns a folder; shown in red to the instructor and cleared
+on resubmission/approval.
