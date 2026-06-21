@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Reports &middot; Course Folder Management System{% endblock %}
+
+{% block content %}
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-gray-900">Course folder report</h1>
+      <p class="mt-1 text-sm text-gray-600">Certified, in-review and pending folders, with what is missing.</p>
+    </div>
+    <a href="{% url 'admin_dashboard' %}"
+       class="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-900">&larr; Dashboard</a>
+  </div>
+
+  {% include "reports/_filters.html" %}
+
+  <!-- Summary -->
+  <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Total</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900">{{ summary.total }}</p>
+    </div>
+    <div class="rounded-lg border border-green-200 bg-green-50 p-4 shadow-sm">
+      <p class="text-xs font-medium uppercase tracking-wide text-green-700">Certified</p>
+      <p class="mt-1 text-2xl font-semibold text-green-800">{{ summary.counts.certified }}</p>
+    </div>
+    <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm">
+      <p class="text-xs font-medium uppercase tracking-wide text-amber-700">In review</p>
+      <p class="mt-1 text-2xl font-semibold text-amber-800">{{ summary.counts.in_review }}</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Pending</p>
+      <p class="mt-1 text-2xl font-semibold text-gray-900">{{ summary.counts.pending }}</p>
+    </div>
+  </div>
+
+  <div class="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-gray-200 text-sm">
+      <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+        <tr>
+          <th class="px-4 py-3">Course</th>
+          <th class="px-4 py-3">Instructor</th>
+          <th class="px-4 py-3">Term</th>
+          <th class="px-4 py-3">Program / Sem</th>
+          <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3">Missing required items</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for row in rows %}
+          <tr>
+            <td class="px-4 py-3 font-medium text-gray-900">
+              <a href="{% url 'review_detail' row.course.pk %}" class="cursor-pointer hover:underline">
+                {{ row.course.code }} / {{ row.course.section }}
+              </a>
+            </td>
+            <td class="px-4 py-3 text-gray-700">{{ row.course.instructor.name }}</td>
+            <td class="px-4 py-3 text-gray-600">{{ row.course.term.name }}</td>
+            <td class="px-4 py-3 text-gray-600">{{ row.course.program }} &middot; S{{ row.course.study_semester }}</td>
+            <td class="px-4 py-3">
+              {% if row.report_status == 'certified' %}
+                <span class="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Certified</span>
+              {% elif row.report_status == 'in_review' %}
+                <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">In review</span>
+              {% else %}
+                <span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Pending</span>
+              {% endif %}
+              <span class="ml-1 text-[11px] text-gray-400">{{ row.status_display }}</span>
+            </td>
+            <td class="px-4 py-3 text-gray-600">
+              {% if row.missing_count %}
+                <span class="font-medium text-red-700">{{ row.missing_count }}</span>
+                <span class="text-gray-500">&mdash; {{ row.missing|join:", " }}</span>
+              {% else %}
+                <span class="text-green-700">None</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">No course folders match these filters.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

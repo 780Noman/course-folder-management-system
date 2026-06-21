@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "folders",
     "review",
     "audit",
+    "reports",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4 landscape; margin: 1.5cm; }
+    body { font-family: "Helvetica", "Arial", sans-serif; color: #111; font-size: 10px; }
+    .header { text-align: center; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 10px; }
+    .university { font-size: 14px; font-weight: bold; }
+    h1 { font-size: 13px; text-align: center; margin: 8px 0; }
+    .summary { margin: 8px 0; font-size: 10px; }
+    .summary b { margin-right: 14px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #555; padding: 3px 5px; font-size: 9px; vertical-align: top; text-align: left; }
+    th { background: #eee; }
+    .muted { color: #555; font-size: 8px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="university">PMAS Arid Agriculture University, Rawalpindi</div>
+    <div>University Institute of Information Technology (UIIT)</div>
+  </div>
+  <h1>Course Folder Report</h1>
+
+  <div class="summary">
+    <b>Total: {{ summary.total }}</b>
+    <b>Certified: {{ summary.counts.certified }}</b>
+    <b>In review: {{ summary.counts.in_review }}</b>
+    <b>Pending: {{ summary.counts.pending }}</b>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Course</th><th>Instructor</th><th>Term</th><th>Program / Sem</th>
+        <th>Status</th><th>Missing required items</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.course.code }} / {{ row.course.section }}</td>
+          <td>{{ row.course.instructor.name }}</td>
+          <td>{{ row.course.term.name }}</td>
+          <td>{{ row.course.program }} &middot; S{{ row.course.study_semester }}</td>
+          <td>{{ row.report_status_label }}</td>
+          <td>{% if row.missing_count %}({{ row.missing_count }}) {{ row.missing|join:", " }}{% else %}None{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">No course folders match these filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="muted">Generated {{ generated_at|date:"d M Y H:i" }}.</p>
+</body>
+</html>
