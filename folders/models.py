@@ -5,6 +5,7 @@ The official Course Folder Review checklist has 28 items. They are stored as
 folder's ``ChecklistItem`` rows when a folder is created.
 """
 
+from django.conf import settings
 from django.db import models
 
 
@@ -136,3 +137,60 @@ class ChecklistItem(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.folder.course})"
+
+
+class SampleKind(models.TextChoices):
+    """Worst/Average/Best grouping for sample items (used from Phase 5)."""
+
+    NONE = "NONE", "—"
+    WORST = "WORST", "Worst"
+    AVERAGE = "AVERAGE", "Average"
+    BEST = "BEST", "Best"
+
+
+def item_file_path(instance, filename):
+    course_id = instance.item.folder.course_id
+    return f"course/{course_id}/item/{instance.item_id}/{filename}"
+
+
+def item_thumb_path(instance, filename):
+    course_id = instance.item.folder.course_id
+    return f"course/{course_id}/item/{instance.item_id}/thumb/{filename}"
+
+
+class ItemFile(models.Model):
+    """A single uploaded file (in private object storage) for a checklist item."""
+
+    IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png"}
+
+    item = models.ForeignKey(
+        ChecklistItem, on_delete=models.CASCADE, related_name="files"
+    )
+    sample_kind = models.CharField(
+        max_length=10, choices=SampleKind.choices, default=SampleKind.NONE
+    )
+    file = models.FileField(upload_to=item_file_path, max_length=500)
+    original_name = models.CharField(max_length=255)
+    size_bytes = models.PositiveBigIntegerField(default=0)
+    content_type = models.CharField(max_length=100, blank=True)
+    thumbnail = models.FileField(
+        upload_to=item_thumb_path, max_length=500, null=True, blank=True
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["uploaded_at", "id"]
+
+    def __str__(self):
+        return self.original_name
+
+    @property
+    def is_image(self):
+        return self.content_type in self.IMAGE_CONTENT_TYPES

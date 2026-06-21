@@ -115,8 +115,14 @@ Assignments 3–4, Final Exam Paper/Solution/Exam, Projects, both Final Results,
 Outcomes Assessment. GENERAL items roll into the mid-term submission for
 completeness/gating.
 
-**ItemFile:** item (FK), sample_kind, file (storage key), original_name,
-size_bytes, content_type, thumbnail (nullable), uploaded_by, uploaded_at.
+**ItemFile:** item (FK), sample_kind (NONE|WORST|AVERAGE|BEST), file (storage
+key), original_name, size_bytes, content_type, thumbnail (nullable),
+uploaded_by, uploaded_at. Files live in PRIVATE storage under
+`course/<id>/item/<id>/...` keys (thumbnails under `.../thumb/...`); they are
+served only through a guarded view — a short-lived signed URL with S3/R2, or a
+streamed response from the private local dir in development. Uploading a file
+sets its item AVAILABLE; deleting the last file reverts it to PENDING and
+removes the storage object(s).
 
 **Certificate:** folder (OneToOne), pdf (storage key), issued_by, issued_at.
 

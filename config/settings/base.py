@@ -120,16 +120,42 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
+# --- Media / uploaded files ------------------------------------------------
+# Uploaded files are PRIVATE. When object-storage credentials are present they
+# go to an S3-compatible bucket (Cloudflare R2 / S3) and are served only via
+# short-lived signed URLs; otherwise they fall back to a private local
+# directory served through an access-controlled view (never a public URL).
+MAX_UPLOAD_MB = env("MAX_UPLOAD_MB")
+MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "media/"  # not routed publicly; files are served via a guarded view
+SIGNED_URL_TTL = env.int("SIGNED_URL_TTL", default=300)  # seconds
+
+USE_S3 = bool(env("AWS_STORAGE_BUCKET_NAME", default=""))
+
+if USE_S3:
+    _default_storage = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": env("AWS_STORAGE_BUCKET_NAME"),
+            "access_key": env("AWS_ACCESS_KEY_ID", default=None),
+            "secret_key": env("AWS_SECRET_ACCESS_KEY", default=None),
+            "endpoint_url": env("AWS_S3_ENDPOINT_URL", default=None),
+            "region_name": env("AWS_S3_REGION_NAME", default="auto"),
+            "default_acl": "private",
+            "querystring_auth": True,          # serve via signed URLs only
+            "querystring_expire": SIGNED_URL_TTL,
+            "signature_version": "s3v4",
+            "file_overwrite": False,
+        },
+    }
+else:
+    _default_storage = {"BACKEND": "django.core.files.storage.FileSystemStorage"}
+
 STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
+    "default": _default_storage,
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
-
-# --- Uploads ---------------------------------------------------------------
-MAX_UPLOAD_MB = env("MAX_UPLOAD_MB")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
