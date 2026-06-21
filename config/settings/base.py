@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     # Local
     "accounts",
     "academics",
+    "folders",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

@@ -100,8 +100,20 @@ courses are never deleted (removing a faculty member deactivates them instead).
 **CourseFolder:** course (OneToOne), status, mid_submitted_at,
 mid_approved_at, final_submitted_at, certified_at.
 
-**ChecklistItem:** folder (FK), title, phase, is_required, order,
-allows_samples (bool, for W/A/B), status, na_note.
+**ChecklistItem:** folder (FK), template (FK, nullable), title, phase,
+is_required, order, allows_samples (bool, for W/A/B), is_removable (bool,
+count-variable items), status, na_note. Fields are denormalised from the
+template so a folder can diverge (add/remove/N/A) without affecting the shared
+template.
+
+**ChecklistTemplateItem:** order (official Sr# 1–28), title, phase, is_required,
+allows_samples, is_removable. Seeded from
+`docs/Updated Checklist-Course Assessment.docx` (the 28 items and W/A/B markings
+are verbatim). Phase mapping: GENERAL = items 1–10; MID = Quizzes 1–2,
+Assignments 1–2, Mid Question Paper/Solution/Exam; FINAL = Quizzes 3–4,
+Assignments 3–4, Final Exam Paper/Solution/Exam, Projects, both Final Results,
+Outcomes Assessment. GENERAL items roll into the mid-term submission for
+completeness/gating.
 
 **ItemFile:** item (FK), sample_kind, file (storage key), original_name,
 size_bytes, content_type, thumbnail (nullable), uploaded_by, uploaded_at.
