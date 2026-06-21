@@ -16,6 +16,9 @@ db.sqlite3
 .env
 *.pem
 
+# Tailwind standalone CLI binary (downloaded locally, not committed)
+/bin/
+
 # Tooling
 .pytest_cache/
 .coverage

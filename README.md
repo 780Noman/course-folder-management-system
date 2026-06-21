@@ -30,3 +30,30 @@ See `MANUAL_SETUP.md` for first-time setup, then `PLAN.md` for the build phases.
 cp .env.example .env      # fill in values
 docker compose up         # app at http://localhost:8000
 ```
+
+### Local (without Docker)
+
+```bash
+python -m venv .venv && . .venv/bin/activate   # Windows: .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python manage.py migrate                       # uses local SQLite when DATABASE_URL is unset
+python manage.py runserver
+```
+
+Settings live in `config/settings/{base,dev,prod}.py` and are loaded entirely
+from the environment via `django-environ`. `manage.py` defaults to
+`config.settings.dev`; `wsgi`/`asgi` default to `config.settings.prod`.
+
+### Building CSS (Tailwind)
+
+CSS is compiled with the Tailwind **standalone CLI** (no Node required). Download
+the binary once into `bin/` (git-ignored), then build:
+
+```bash
+# one-time: download bin/tailwindcss(.exe) for your OS from the Tailwind v3 release
+./bin/tailwindcss -i assets/css/input.css -o static/css/app.css --minify
+# during development, add --watch to rebuild on change
+```
+
+`assets/css/input.css` is the source; `static/css/app.css` (committed) is what the
+templates load and WhiteNoise serves.

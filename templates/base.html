@@ -1,0 +1,19 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Course Folder Management System{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="{% static 'js/htmx.min.js' %}" defer></script>
+  <script src="{% static 'js/alpine.min.js' %}" defer></script>
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-900 antialiased">
+  {% block body %}
+  <main class="mx-auto max-w-5xl px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+  {% endblock %}
+</body>
+</html>

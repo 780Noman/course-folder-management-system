@@ -1,0 +1,6 @@
+/* Tailwind source. Compile to static/css/app.css with the Tailwind standalone
+   CLI (see README "Building CSS"). The compiled file is what the templates load
+   and what WhiteNoise serves in production. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
