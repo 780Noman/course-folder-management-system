@@ -145,13 +145,20 @@ def faculty_dashboard(request):
         if selected
         else user.courses.none()
     )
-    return render(
-        request,
-        "accounts/dashboard_faculty.html",
-        {
-            "courses": courses,
-            "terms": terms,
-            "selected_term": selected,
-            "current_term": current,
-        },
-    )
+
+    # Search within the selected term by course code or title.
+    query = (request.GET.get("q") or "").strip()
+    if query:
+        courses = courses.filter(Q(code__icontains=query) | Q(title__icontains=query))
+
+    context = {
+        "courses": courses,
+        "terms": terms,
+        "selected_term": selected,
+        "current_term": current,
+        "q": query,
+    }
+    # Live search swaps just the course grid.
+    if request.htmx:
+        return render(request, "accounts/_faculty_courses.html", context)
+    return render(request, "accounts/dashboard_faculty.html", context)

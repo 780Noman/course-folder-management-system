@@ -17,22 +17,32 @@
     </form>
   </div>
 
-  <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-    <div class="text-sm text-gray-600">
+  {# Term filter + live search both refresh #faculty-courses via HTMX. #}
+  <form class="mt-6 flex flex-wrap items-center justify-between gap-3"
+        hx-get="{% url 'faculty_dashboard' %}"
+        hx-target="#faculty-courses"
+        hx-select="#faculty-courses"
+        hx-swap="outerHTML"
+        hx-trigger="input changed delay:300ms from:input[name='q'], change from:select[name='term']"
+        hx-push-url="true">
+    <div class="flex items-center gap-2">
+      <input type="search" name="q" id="q" value="{{ q }}" placeholder="Search my courses"
+             autocomplete="off"
+             class="w-56 rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900">
       {% if selected_term %}
-        Showing <span class="font-medium text-gray-900">{{ selected_term.name }}</span>
-        {% if selected_term == current_term %}
-          <span class="ml-1 inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Current term</span>
-        {% endif %}
-      {% else %}
-        No courses assigned yet.
+        <span class="text-sm text-gray-600">in
+          <span class="font-medium text-gray-900">{{ selected_term.name }}</span>
+          {% if selected_term == current_term %}
+            <span class="ml-1 inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Current term</span>
+          {% endif %}
+        </span>
       {% endif %}
     </div>
 
     {% if terms %}
-      <form method="get" class="flex items-center gap-2">
+      <div class="flex items-center gap-2">
         <label for="term" class="text-sm text-gray-600">Term</label>
-        <select name="term" id="term" onchange="this.form.submit()"
+        <select name="term" id="term"
                 class="rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900">
           {% for t in terms %}
             <option value="{{ t.pk }}" {% if selected_term and selected_term.pk == t.pk %}selected{% endif %}>
@@ -40,25 +50,10 @@
             </option>
           {% endfor %}
         </select>
-      </form>
-    {% endif %}
-  </div>
-
-  <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    {% for course in courses %}
-      <a href="{% url 'folder_detail' course.pk %}"
-         class="block cursor-pointer rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition hover:border-gray-300 hover:shadow focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ course.code }} &middot; Section {{ course.section }}</p>
-        <h2 class="mt-1 text-base font-semibold text-gray-900">{{ course.title }}</h2>
-        <p class="mt-2 text-sm text-gray-600">{{ course.program }} &middot; Semester {{ course.study_semester }} &middot; {{ course.credit_hours }} CH</p>
-        <p class="mt-3 text-xs font-medium text-gray-700">Open course folder &rarr;</p>
-      </a>
-    {% empty %}
-      <div class="sm:col-span-2 lg:col-span-3 rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center">
-        <p class="text-sm text-gray-600">
-          {% if terms %}No courses in this term.{% else %}You have no assigned courses yet. The focal person assigns courses to faculty.{% endif %}
-        </p>
+        <noscript><button type="submit" class="cursor-pointer rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white">Go</button></noscript>
       </div>
-    {% endfor %}
-  </div>
+    {% endif %}
+  </form>
+
+  {% include "accounts/_faculty_courses.html" %}
 {% endblock %}

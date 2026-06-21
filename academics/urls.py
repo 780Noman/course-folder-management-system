@@ -12,4 +12,5 @@ urlpatterns = [
         name="term_set_current",
     ),
     path("manage/courses/", views.course_list, name="course_list"),
+    path("courses/search/", views.course_search, name="course_search"),
 ]
