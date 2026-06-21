@@ -25,6 +25,21 @@ storage (Cloudflare R2 / S3) · WeasyPrint · Docker.
 
 See `MANUAL_SETUP.md` for first-time setup, then `PLAN.md` for the build phases.
 `CLAUDE.md` holds the working rules and `docs/DATA_MODEL.md` the schema.
+`docs/BACKUPS.md` documents database + object-storage backup and restore.
+
+### Security
+
+- Roles enforced server-side on every view; folder writes are owner-only,
+  reads are owner-or-admin (focal-person review).
+- Uploads are private; files are served only via short-lived signed URLs
+  (or a guarded streamed response locally).
+- Production sets HTTPS redirect, HSTS, secure/HttpOnly cookies, CSRF, security
+  headers, and login rate-limiting/lockout. Verify with:
+
+  ```bash
+  python manage.py check --deploy
+  pip install pip-audit && python -m pip_audit   # dependency vulnerability scan
+  ```
 
 ```bash
 cp .env.example .env      # fill in values

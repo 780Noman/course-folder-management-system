@@ -9,6 +9,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 
+from audit.services import record
+
 from . import ratelimit
 from .emails import send_invite_email
 from .forms import InviteForm
@@ -58,6 +60,7 @@ def invite_user(request):
             user.set_unusable_password()
             user.save()
             send_invite_email(user, request)
+            record(request.user, "user_invite", user, email=user.email, role=user.role)
             messages.success(
                 request, f"Invitation sent to {user.email}."
             )
@@ -99,6 +102,9 @@ def faculty_set_active(request, pk):
     member.is_active = not member.is_active
     member.save(update_fields=["is_active"])
     state = "reactivated" if member.is_active else "deactivated"
+    record(request.user,
+           "faculty_activate" if member.is_active else "faculty_deactivate",
+           member)
     messages.success(request, f"{member.name} {state}.")
     return redirect("faculty_list")
 

@@ -10,7 +10,7 @@ whitenoise~=6.8
 # Files / storage / images
 django-storages~=1.14
 boto3~=1.35
-Pillow~=11.0
+Pillow~=12.2  # >=12.2.0 fixes CVE-2026-40192/42309/42310/42311, PYSEC-2026-165
 
 # Frontend interactivity
 django-htmx~=1.21
@@ -19,12 +19,12 @@ django-htmx~=1.21
 # WeasyPrint is the production engine (needs GTK; present in the Docker image).
 # xhtml2pdf is a pure-Python fallback for local dev/tests on Windows where GTK
 # is unavailable (see MANUAL_SETUP.md); the renderer picks whichever works.
-weasyprint~=63.0
+weasyprint~=68.0  # >=68.0 fixes CVE-2025-68616
 xhtml2pdf~=0.2.16
 
 # Excel report export
 openpyxl~=3.1
 
 # Dev / test
-pytest~=8.3
-pytest-django~=4.9
+pytest~=9.0  # >=9.0.3 fixes CVE-2025-71176
+pytest-django~=4.11

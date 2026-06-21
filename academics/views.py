@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from accounts.permissions import admin_required
+from audit.services import record
 
 from .forms import CourseForm, TermForm
 from .models import Course, Term
@@ -28,6 +29,7 @@ def term_list(request):
         form = TermForm(request.POST)
         if form.is_valid():
             term = form.save()
+            record(request.user, "term_create", term, name=term.name)
             messages.success(request, f"Term “{term.name}” created.")
             return redirect("term_list")
     else:
@@ -47,6 +49,7 @@ def term_set_current(request, pk):
     term = get_object_or_404(Term, pk=pk)
     term.is_current = True
     term.save()
+    record(request.user, "term_set_current", term, name=term.name)
     messages.success(request, f"“{term.name}” is now the current term.")
     return redirect("term_list")
 
@@ -58,6 +61,9 @@ def course_list(request):
         form = CourseForm(request.POST)
         if form.is_valid():
             course = form.save()
+            record(request.user, "course_create", course,
+                   code=course.code, section=course.section, term=course.term_id,
+                   instructor=course.instructor_id)
             messages.success(
                 request, f"Course “{course.code} ({course.section})” created."
             )

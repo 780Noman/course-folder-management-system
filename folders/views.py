@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from academics.models import Course
+from audit.services import record
 
 from .models import (
     ChecklistItem,
@@ -38,9 +39,19 @@ _FAMILY_PREFIX = {"quiz": "Quizzes- Paper", "assignment": "Assignment"}
 
 
 def _require_folder_access(request, course):
-    """Faculty may open their own course folders; admins may open any."""
+    """READ access: faculty may open their own folders; admins may open any."""
     user = request.user
     if not (user.is_admin or course.instructor_id == user.id):
+        raise PermissionDenied
+
+
+def _require_folder_owner(request, course):
+    """WRITE access: only the course's own instructor may modify the folder.
+
+    Admins review folders (read-only); they do not edit faculty content, per the
+    role model in CLAUDE.md. Least privilege for mutation endpoints.
+    """
+    if course.instructor_id != request.user.id:
         raise PermissionDenied
 
 
@@ -104,7 +115,7 @@ def _next_family_number(folder, prefix):
 def item_add(request, course_id):
     """Add a count-variable item (extra quiz/assignment) to a folder."""
     course = get_object_or_404(Course, pk=course_id)
-    _require_folder_access(request, course)
+    _require_folder_owner(request, course)
 
     kind = request.POST.get("kind")
     phase = request.POST.get("phase")
@@ -126,6 +137,7 @@ def item_add(request, course_id):
         is_removable=True,
         status=ItemStatus.PENDING,
     )
+    record(request.user, "item_add", item, course=course.pk, title=item.title)
     messages.success(request, f"Added “{item.title}”.")
     return redirect("folder_detail", course_id=course.pk)
 
@@ -138,7 +150,7 @@ def item_remove(request, item_id):
         ChecklistItem.objects.select_related("folder__course"), pk=item_id
     )
     course = item.folder.course
-    _require_folder_access(request, course)
+    _require_folder_owner(request, course)
 
     if not item.is_removable:
         messages.error(
@@ -148,15 +160,17 @@ def item_remove(request, item_id):
     else:
         title = item.title
         item.delete()
+        record(request.user, "item_remove", course, title=title)
         messages.success(request, f"Removed “{title}”.")
     return redirect("folder_detail", course_id=course.pk)
 
 
 def _get_item_for_edit(request, item_id):
+    """Fetch an item for a WRITE action (owner-only)."""
     item = get_object_or_404(
         ChecklistItem.objects.select_related("folder__course"), pk=item_id
     )
-    _require_folder_access(request, item.folder.course)
+    _require_folder_owner(request, item.folder.course)
     return item
 
 
@@ -230,6 +244,7 @@ def file_thumb(request, file_id):
 def file_delete(request, file_id):
     """Delete a file (and its thumbnail) from storage and the database."""
     item_file = _get_file_for_access(request, file_id)
+    _require_folder_owner(request, item_file.item.folder.course)  # owner-only write
     course_id = item_file.item.folder.course_id
     name = item_file.original_name
     delete_item_file(item_file, user=request.user)
@@ -246,6 +261,7 @@ def item_mark_na(request, item_id):
     item.status = ItemStatus.NOT_APPLICABLE
     item.na_note = request.POST.get("na_note", "").strip()
     item.save(update_fields=["status", "na_note"])
+    record(request.user, "item_mark_na", item, note=item.na_note)
     messages.success(request, f"“{item.title}” marked not applicable.")
     return redirect("folder_detail", course_id=item.folder.course_id)
 
@@ -260,5 +276,6 @@ def item_clear_na(request, item_id):
     item.na_note = ""
     item.save(update_fields=["status", "na_note"])
     recompute_item_status(item)
+    record(request.user, "item_clear_na", item)
     messages.success(request, f"“{item.title}” marked applicable.")
     return redirect("folder_detail", course_id=item.folder.course_id)
