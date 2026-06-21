@@ -1,0 +1,26 @@
+# Core
+Django~=5.2.0
+psycopg[binary]~=3.2
+django-environ~=0.12.0
+
+# Server / static
+gunicorn~=23.0
+whitenoise~=6.8
+
+# Files / storage / images
+django-storages~=1.14
+boto3~=1.35
+Pillow~=11.0
+
+# Frontend interactivity
+django-htmx~=1.21
+
+# PDF certificate generation (HTML -> PDF)
+weasyprint~=63.0
+
+# Excel report export
+openpyxl~=3.1
+
+# Dev / test
+pytest~=8.3
+pytest-django~=4.9

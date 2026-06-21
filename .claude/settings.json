@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python manage.py *)",
+      "Bash(pytest *)",
+      "Bash(pip install *)",
+      "Bash(docker compose *)",
+      "Bash(git *)"
+    ]
+  },
+  "notes": "Read CLAUDE.md and PLAN.md before any work. Skills used: ui-ux-pro-max, frontend-design. Work one PLAN.md task at a time, verify-first, run tests after each task."
+}
