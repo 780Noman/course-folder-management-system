@@ -44,6 +44,21 @@ Settings live in `config/settings/{base,dev,prod}.py` and are loaded entirely
 from the environment via `django-environ`. `manage.py` defaults to
 `config.settings.dev`; `wsgi`/`asgi` default to `config.settings.prod`.
 
+### First admin (one-time)
+
+The system has no public sign-up. Create the first focal-person (admin) account
+once with Django's `createsuperuser`; it prompts for email, name, and password
+and is assigned the **ADMIN** role automatically. That admin then invites all
+other users from the dashboard.
+
+```bash
+python manage.py createsuperuser          # local
+docker compose run --rm web python manage.py createsuperuser   # Docker
+```
+
+Everyone else is onboarded via the invite flow (admin enters a name + email; the
+user receives a single-use, expiring link and sets their own password).
+
 ### Building CSS (Tailwind)
 
 CSS is compiled with the Tailwind **standalone CLI** (no Node required). Download

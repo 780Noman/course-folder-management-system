@@ -38,7 +38,23 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third-party
     "django_htmx",
+    # Local
+    "accounts",
 ]
+
+AUTH_USER_MODEL = "accounts.User"
+
+# Authentication redirects
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "dashboard"
+LOGOUT_REDIRECT_URL = "home"
+
+# Login throttling / lockout. Counted per (IP, email) in the cache; after
+# LOGIN_FAILURE_LIMIT failures the pair is locked for LOGIN_LOCKOUT_SECONDS.
+# NOTE: uses Django's default local-memory cache; configure a shared cache
+# (Redis/Memcached) in production so the lockout holds across processes.
+LOGIN_FAILURE_LIMIT = env.int("LOGIN_FAILURE_LIMIT", default=5)
+LOGIN_LOCKOUT_SECONDS = env.int("LOGIN_LOCKOUT_SECONDS", default=900)
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

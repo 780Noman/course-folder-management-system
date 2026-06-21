@@ -1,0 +1,13 @@
+Hello {{ user.name }},
+
+You have been invited to the UIIT Course Folder Management System.
+
+To activate your account, set your password using the secure link below. The
+link can be used once and expires in {{ timeout_days }} days:
+
+{{ link }}
+
+If you were not expecting this invitation, you can ignore this email.
+
+— Course Folder Management System
+  UIIT, PMAS Arid Agriculture University Rawalpindi

@@ -12,6 +12,19 @@
 <body class="min-h-screen bg-gray-50 text-gray-900 antialiased">
   {% block body %}
   <main class="mx-auto max-w-5xl px-4 py-8">
+    {% if messages %}
+      <div class="mb-6 space-y-2">
+        {% for message in messages %}
+          <div role="status"
+               class="rounded-md border px-4 py-3 text-sm
+               {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-700
+               {% elif message.tags == 'success' %}border-green-200 bg-green-50 text-green-700
+               {% else %}border-gray-200 bg-gray-50 text-gray-700{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
   {% endblock %}
