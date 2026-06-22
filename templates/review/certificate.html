@@ -12,13 +12,14 @@
     .meta { margin: 10px 0; line-height: 1.6; }
     .meta b { display: inline-block; min-width: 90px; }
     .rule { font-size: 10px; color: #333; margin: 6px 0 10px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-    th, td { border: 1px solid #A8A29E; padding: 4px 6px; font-size: 10px; vertical-align: top; }
+    table { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; }
+    th, td { border: 1px solid #A8A29E; padding: 3px 6px; font-size: 9.5px; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
     th { background: #EFEDE6; text-align: left; }
-    .sr { width: 26px; text-align: center; }
-    .avail { width: 54px; text-align: center; }
+    .sr { width: 7%; text-align: center; }
+    .item { width: 33%; }
+    .avail { width: 10%; text-align: center; }
     .legend { font-size: 9px; color: #444; margin-top: 6px; }
-    .signoff { margin-top: 28px; width: 100%; }
+    .signoff { margin-top: 18px; width: 100%; }
     .signoff td { border: none; font-size: 11px; padding: 14px 0; }
     .issued { margin-top: 18px; font-size: 10px; color: #444; }
   </style>
@@ -48,22 +49,22 @@
   <table>
     <thead>
       <tr>
-        <th class="sr">Sr#</th><th>Item</th><th class="avail">Available</th>
-        <th class="sr">Sr#</th><th>Item</th><th class="avail">Available</th>
+        <th class="sr">Sr#</th><th class="item">Item</th><th class="avail">Available</th>
+        <th class="sr">Sr#</th><th class="item">Item</th><th class="avail">Available</th>
       </tr>
     </thead>
     <tbody>
       {% for left, right in rows %}
         <tr>
           <td class="sr">{{ left.order }}</td>
-          <td>{{ left.title }}</td>
+          <td class="item">{{ left.title }}</td>
           <td class="avail">{% if left.status == 'AVAILABLE' %}&#10004;{% elif left.status == 'NOT_APPLICABLE' %}N/A{% endif %}</td>
           {% if right %}
             <td class="sr">{{ right.order }}</td>
-            <td>{{ right.title }}</td>
+            <td class="item">{{ right.title }}</td>
             <td class="avail">{% if right.status == 'AVAILABLE' %}&#10004;{% elif right.status == 'NOT_APPLICABLE' %}N/A{% endif %}</td>
           {% else %}
-            <td class="sr"></td><td></td><td class="avail"></td>
+            <td class="sr"></td><td class="item"></td><td class="avail"></td>
           {% endif %}
         </tr>
       {% endfor %}

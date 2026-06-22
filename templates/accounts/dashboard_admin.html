@@ -3,51 +3,52 @@
 {% block title %}Admin dashboard &middot; Course Folder Management System{% endblock %}
 
 {% block content %}
-  <div class="flex items-center justify-between">
-    <div>
-      <h1 class="text-2xl font-semibold tracking-tight text-gray-900">Admin dashboard</h1>
-      <p class="mt-1 text-sm text-gray-600">
-        Signed in as {{ request.user.name }} (Focal Person)
-      </p>
-    </div>
-    <form method="post" action="{% url 'logout' %}">
-      {% csrf_token %}
-      <button type="submit"
-              class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-        Sign out
-      </button>
-    </form>
+  <div>
+    <h1 class="text-3xl font-semibold tracking-tight text-foreground">Focal person dashboard</h1>
+    <p class="mt-1 text-muted-foreground">Manage faculty and courses, review folders, and issue certificates.</p>
   </div>
 
-  <div class="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-    <div class="flex flex-wrap gap-3">
-      <a href="{% url 'faculty_list' %}"
-         class="inline-flex cursor-pointer items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-strong focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-        Manage faculty
-      </a>
-      <a href="{% url 'term_list' %}"
-         class="inline-flex cursor-pointer items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-        Manage terms
-      </a>
-      <a href="{% url 'course_list' %}"
-         class="inline-flex cursor-pointer items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-        Manage courses
-      </a>
-      <a href="{% url 'review_list' %}"
-         class="inline-flex cursor-pointer items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-        Review folders
-      </a>
-      <a href="{% url 'report' %}"
-         class="inline-flex cursor-pointer items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-        Reports
-      </a>
-      <a href="{% url 'course_search' %}"
-         class="inline-flex cursor-pointer items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-        Find courses
-      </a>
-    </div>
-    <p class="mt-4 text-sm text-gray-600">
-      Course review, certificates, and reports will appear here in later phases.
-    </p>
+  <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <a href="{% url 'faculty_list' %}"
+       class="group rounded-xl border border-border bg-card p-6 shadow-sm transition hover:border-primary/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      <h2 class="text-lg font-semibold text-foreground">Faculty</h2>
+      <p class="mt-1 text-sm text-muted-foreground">Invite faculty by email, search, and activate or deactivate accounts.</p>
+      <p class="mt-4 text-sm font-medium text-primary group-hover:text-primary-strong">Manage faculty &rarr;</p>
+    </a>
+
+    <a href="{% url 'term_list' %}"
+       class="group rounded-xl border border-border bg-card p-6 shadow-sm transition hover:border-primary/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      <h2 class="text-lg font-semibold text-foreground">Terms</h2>
+      <p class="mt-1 text-sm text-muted-foreground">Create teaching terms and set the current one.</p>
+      <p class="mt-4 text-sm font-medium text-primary group-hover:text-primary-strong">Manage terms &rarr;</p>
+    </a>
+
+    <a href="{% url 'course_list' %}"
+       class="group rounded-xl border border-border bg-card p-6 shadow-sm transition hover:border-primary/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      <h2 class="text-lg font-semibold text-foreground">Courses</h2>
+      <p class="mt-1 text-sm text-muted-foreground">Create courses and assign them to faculty for a term.</p>
+      <p class="mt-4 text-sm font-medium text-primary group-hover:text-primary-strong">Manage courses &rarr;</p>
+    </a>
+
+    <a href="{% url 'review_list' %}"
+       class="group rounded-xl border border-border bg-card p-6 shadow-sm transition hover:border-primary/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      <h2 class="text-lg font-semibold text-foreground">Review folders</h2>
+      <p class="mt-1 text-sm text-muted-foreground">Review submitted folders, flag missing items, approve, and issue certificates.</p>
+      <p class="mt-4 text-sm font-medium text-primary group-hover:text-primary-strong">Open review queue &rarr;</p>
+    </a>
+
+    <a href="{% url 'report' %}"
+       class="group rounded-xl border border-border bg-card p-6 shadow-sm transition hover:border-primary/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      <h2 class="text-lg font-semibold text-foreground">Reports</h2>
+      <p class="mt-1 text-sm text-muted-foreground">Certified / in-review / pending status with exports to PDF and Excel.</p>
+      <p class="mt-4 text-sm font-medium text-primary group-hover:text-primary-strong">View reports &rarr;</p>
+    </a>
+
+    <a href="{% url 'course_search' %}"
+       class="group rounded-xl border border-border bg-card p-6 shadow-sm transition hover:border-primary/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      <h2 class="text-lg font-semibold text-foreground">Find courses</h2>
+      <p class="mt-1 text-sm text-muted-foreground">Live search across courses by code, title, or faculty name.</p>
+      <p class="mt-4 text-sm font-medium text-primary group-hover:text-primary-strong">Search courses &rarr;</p>
+    </a>
   </div>
 {% endblock %}

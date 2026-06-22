@@ -147,7 +147,7 @@ def faculty_dashboard(request):
             selected = terms[0]  # most recent taught term
 
     courses = (
-        user.courses.filter(term=selected).select_related("term")
+        user.courses.filter(term=selected).select_related("term", "folder")
         if selected
         else user.courses.none()
     )

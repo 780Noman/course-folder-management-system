@@ -1,56 +1,45 @@
 {% extends "base.html" %}
 
-{% block title %}My dashboard &middot; Course Folder Management System{% endblock %}
+{% block title %}My courses &middot; Course Folder Management System{% endblock %}
 
 {% block content %}
-  <div class="flex items-center justify-between">
-    <div>
-      <h1 class="text-2xl font-semibold tracking-tight text-gray-900">My courses</h1>
-      <p class="mt-1 text-sm text-gray-600">Signed in as {{ request.user.name }} (Faculty)</p>
-    </div>
-    <form method="post" action="{% url 'logout' %}">
-      {% csrf_token %}
-      <button type="submit"
-              class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-        Sign out
-      </button>
-    </form>
+  <div>
+    <h1 class="text-3xl font-semibold tracking-tight text-foreground">My courses</h1>
+    <p class="mt-1 text-muted-foreground">
+      {% if selected_term %}
+        Showing <span class="font-medium text-foreground">{{ selected_term.name }}</span>
+        {% if selected_term == current_term %}
+          <span class="ml-1 inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Current term</span>
+        {% endif %}
+      {% else %}
+        Your assigned courses appear here.
+      {% endif %}
+    </p>
   </div>
 
   {# Term filter + live search both refresh #faculty-courses via HTMX. #}
-  <form class="mt-6 flex flex-wrap items-center justify-between gap-3"
+  <form class="mt-6 flex flex-wrap items-center gap-3"
         hx-get="{% url 'faculty_dashboard' %}"
         hx-target="#faculty-courses"
         hx-select="#faculty-courses"
         hx-swap="outerHTML"
         hx-trigger="input changed delay:300ms from:input[name='q'], change from:select[name='term']"
         hx-push-url="true">
-    <div class="flex items-center gap-2">
-      <input type="search" name="q" id="q" value="{{ q }}" placeholder="Search my courses"
-             autocomplete="off"
-             class="w-56 rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring">
-      {% if selected_term %}
-        <span class="text-sm text-gray-600">in
-          <span class="font-medium text-gray-900">{{ selected_term.name }}</span>
-          {% if selected_term == current_term %}
-            <span class="ml-1 inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Current term</span>
-          {% endif %}
-        </span>
-      {% endif %}
-    </div>
-
+    <input type="search" name="q" id="q" value="{{ q }}" placeholder="Search my courses"
+           autocomplete="off"
+           class="w-full max-w-xs rounded-md border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring">
     {% if terms %}
       <div class="flex items-center gap-2">
-        <label for="term" class="text-sm text-gray-600">Term</label>
+        <label for="term" class="text-sm text-muted-foreground">Term</label>
         <select name="term" id="term"
-                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring">
+                class="rounded-md border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring">
           {% for t in terms %}
             <option value="{{ t.pk }}" {% if selected_term and selected_term.pk == t.pk %}selected{% endif %}>
               {{ t.name }}{% if t == current_term %} (current){% endif %}
             </option>
           {% endfor %}
         </select>
-        <noscript><button type="submit" class="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white">Go</button></noscript>
+        <noscript><button type="submit" class="cursor-pointer rounded-md bg-primary px-3 py-2 text-sm font-medium text-on-primary">Go</button></noscript>
       </div>
     {% endif %}
   </form>

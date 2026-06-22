@@ -1,0 +1,30 @@
+{% load static %}
+{# App navbar for signed-in pages: UIIT logo, dashboard link, user + sign out. #}
+<header class="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5">
+    <a href="{% url 'dashboard' %}"
+       class="flex items-center gap-3 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md">
+      <img src="{% static 'img/uiit-logo.jpg' %}" alt="UIIT" class="h-10 w-10 rounded-full ring-1 ring-border">
+      <span class="leading-tight">
+        <span class="block text-sm font-semibold text-foreground">Course Folder Management</span>
+        <span class="block text-xs text-muted-foreground">UIIT &middot; PMAS Arid Agriculture University</span>
+      </span>
+    </a>
+
+    <div class="flex items-center gap-3">
+      <span class="hidden text-sm text-muted-foreground sm:block">
+        {{ request.user.name }}
+        <span class="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-strong">
+          {% if request.user.is_admin %}Focal Person{% else %}Faculty{% endif %}
+        </span>
+      </span>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="cursor-pointer rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          Sign out
+        </button>
+      </form>
+    </div>
+  </div>
+</header>

@@ -179,28 +179,36 @@ def _get_item_for_edit(request, item_id):
 def file_upload(request, item_id):
     """Upload a file to a checklist item (stored in private object storage)."""
     item = _get_item_for_edit(request, item_id)
+    def _respond(error=None, uploaded_name=None):
+        # HTMX: swap just this item's evidence area (no page jump).
+        if request.htmx:
+            item.refresh_from_db()
+            return render(request, "folders/_item_evidence.html",
+                          {"item": item, "upload_error": error, "uploaded_name": uploaded_name})
+        if error:
+            messages.error(request, error)
+        elif uploaded_name:
+            messages.success(request, f"Uploaded “{uploaded_name}”.")
+        return redirect("folder_detail", course_id=item.folder.course_id)
+
     upload = request.FILES.get("file")
     if not upload:
-        messages.error(request, "No file selected.")
-        return redirect("folder_detail", course_id=item.folder.course_id)
+        return _respond(error="No file selected.")
 
     # Sample (W/A/B) items require the target group; ordinary items ignore it.
     sample_kind = SampleKind.NONE
     if item.allows_samples:
         sample_kind = request.POST.get("sample_kind", "")
         if sample_kind not in {SampleKind.WORST, SampleKind.AVERAGE, SampleKind.BEST}:
-            messages.error(request, "Choose a sample group (Worst, Average, or Best).")
-            return redirect("folder_detail", course_id=item.folder.course_id)
+            return _respond(error="Choose a sample group (Worst, Average, or Best).")
 
     try:
         validate_upload(upload)
     except ValidationError as exc:
-        messages.error(request, " ".join(exc.messages))
-        return redirect("folder_detail", course_id=item.folder.course_id)
+        return _respond(error=" ".join(exc.messages))
 
     save_item_file(item, upload, request.user, sample_kind=sample_kind)
-    messages.success(request, f"Uploaded “{upload.name}”.")
-    return redirect("folder_detail", course_id=item.folder.course_id)
+    return _respond(uploaded_name=upload.name)
 
 
 def _get_file_for_access(request, file_id):
@@ -245,9 +253,13 @@ def file_delete(request, file_id):
     """Delete a file (and its thumbnail) from storage and the database."""
     item_file = _get_file_for_access(request, file_id)
     _require_folder_owner(request, item_file.item.folder.course)  # owner-only write
-    course_id = item_file.item.folder.course_id
+    item = item_file.item
+    course_id = item.folder.course_id
     name = item_file.original_name
     delete_item_file(item_file, user=request.user)
+    if request.htmx:
+        item.refresh_from_db()
+        return render(request, "folders/_item_evidence.html", {"item": item})
     messages.success(request, f"Deleted “{name}”.")
     return redirect("folder_detail", course_id=course_id)
 

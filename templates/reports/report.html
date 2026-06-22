@@ -36,7 +36,7 @@
 
   <div class="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
-      <thead class="bg-muted text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+      <thead class="th-row text-left text-xs font-semibold uppercase tracking-wide">
         <tr>
           <th class="px-4 py-3">Course</th>
           <th class="px-4 py-3">Instructor</th>
@@ -50,7 +50,7 @@
         {% for row in rows %}
           <tr>
             <td class="px-4 py-3 font-medium text-gray-900">
-              <a href="{% url 'review_detail' row.course.pk %}" class="cursor-pointer hover:underline">
+              <a href="{% url 'review_detail' row.course.pk %}" class="cursor-pointer font-medium text-primary underline underline-offset-2 hover:text-primary-strong">
                 {{ row.course.code }} / {{ row.course.section }}
               </a>
             </td>

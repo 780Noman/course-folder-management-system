@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Course Folder Management System{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/uiit-logo.jpg' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
   <script src="{% static 'js/alpine.min.js' %}" defer></script>
@@ -14,23 +15,32 @@
      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-on-primary">
     Skip to main content
   </a>
-  {% block body %}
-  <main id="main" class="mx-auto max-w-5xl px-4 py-8">
+
+  {% block chrome %}
+    {% if request.user.is_authenticated %}{% include "partials/_navbar.html" %}{% endif %}
+
+    {# Toast messages: float top-right, auto-dismiss; no page jump. #}
     {% if messages %}
-      <div class="mb-6 space-y-2">
+      <div class="pointer-events-none fixed right-4 top-4 z-50 w-full max-w-sm space-y-2">
         {% for message in messages %}
-          <div role="status"
-               class="rounded-md border px-4 py-3 text-sm
-               {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-700
-               {% elif message.tags == 'success' %}border-green-200 bg-green-50 text-green-700
-               {% else %}border-gray-200 bg-gray-50 text-gray-700{% endif %}">
-            {{ message }}
+          <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
+               x-transition.opacity
+               class="pointer-events-auto flex items-start gap-3 rounded-md border px-4 py-3 text-sm shadow-md
+               {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800
+               {% elif message.tags == 'success' %}border-green-200 bg-green-50 text-green-800
+               {% else %}border-border bg-card text-foreground{% endif %}"
+               role="status">
+            <span class="flex-1">{{ message }}</span>
+            <button type="button" @click="show = false"
+                    class="cursor-pointer text-current opacity-60 hover:opacity-100" aria-label="Dismiss">&times;</button>
           </div>
         {% endfor %}
       </div>
     {% endif %}
-    {% block content %}{% endblock %}
-  </main>
+
+    <main id="main" class="mx-auto max-w-6xl px-4 py-8">
+      {% block content %}{% endblock %}
+    </main>
   {% endblock %}
 </body>
 </html>

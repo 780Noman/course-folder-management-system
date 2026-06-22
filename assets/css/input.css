@@ -13,10 +13,24 @@
 
 @layer base {
   html {
+    /* Slightly larger base so the whole UI reads comfortably (everything is
+       rem-based, so this scales spacing proportionally too). */
+    font-size: 17px;
     font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    line-height: 1.6;
   }
   h1, h2, h3, h4 {
     font-family: "Crimson Pro", Georgia, serif;
+  }
+}
+
+@layer components {
+  /* Branded table header used across list/report tables. */
+  .th-row {
+    @apply bg-primary/10 text-primary-strong;
   }
 }
 
