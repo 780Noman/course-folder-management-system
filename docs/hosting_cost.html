@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 1.8cm; }
+  body { font-family: "Helvetica", "Arial", sans-serif; color: #1C1917; font-size: 11px; line-height: 1.5; }
+  .cover { border-bottom: 3px solid #166534; padding-bottom: 10px; margin-bottom: 16px; }
+  h1 { color: #166534; font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #57534E; font-size: 12px; }
+  .by { margin-top: 8px; font-size: 12px; }
+  h2 { color: #14532D; font-size: 14px; margin: 18px 0 6px; border-bottom: 1px solid #E0DDD3; padding-bottom: 3px; }
+  p { margin: 5px 0; }
+  ul { margin: 4px 0 8px 18px; }
+  li { margin: 3px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  th, td { border: 1px solid #A8A29E; padding: 5px 7px; font-size: 10px; text-align: left; vertical-align: top; }
+  th { background: #EFEDE6; }
+  .total td { background: #F0FDF4; font-weight: bold; }
+  .note { background: #F7F6F2; border: 1px solid #E0DDD3; padding: 6px 8px; margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>Course Folder Management System</h1>
+  <div class="sub">Hosting and Cost Recommendation</div>
+  <div class="sub">University Institute of Information Technology (UIIT), PMAS Arid Agriculture University, Rawalpindi</div>
+  <div class="by"><strong>Prepared by: Noman Amjad</strong></div>
+</div>
+
+<h2>1. Usage scenario</h2>
+<p>One university department. Up to about 50 users (faculty and one focal person). The system is used mainly around the mid-term and final-term submission periods. It must remain available (no downtime) for users during those periods.</p>
+
+<h2>2. Recommended setup</h2>
+<p>The application is already container-ready and works with any standard cloud database and S3-compatible file storage, so it can run on the services below without code changes.</p>
+
+<table>
+  <tr><th>Component</th><th>Service</th><th>Plan / what it gives</th><th>Cost</th></tr>
+  <tr><td>Application hosting</td><td>Render - Web Service (Starter)</td><td>Always-on (does not sleep); deploys the application's container directly</td><td>USD 7 / month</td></tr>
+  <tr><td>Database (PostgreSQL)</td><td>Render PostgreSQL (Basic)</td><td>Managed database, ~1 GB storage, automatic backups; created in the same Render account</td><td>about USD 7 / month</td></tr>
+  <tr><td>File storage (uploads, certificates)</td><td>Cloudflare R2</td><td>Free tier: 10 GB storage and no bandwidth/egress charges; afterwards USD 0.015 / GB-month</td><td>USD 0 (free tier)</td></tr>
+  <tr><td>Email (invites, password reset)</td><td>Brevo free tier or university SMTP</td><td>About 300 emails/day on the free tier; ample for invitations</td><td>USD 0</td></tr>
+  <tr><td>Domain (optional)</td><td>Any registrar</td><td>A custom web address, e.g. folders.uiit.edu.pk</td><td>about USD 10-15 / year</td></tr>
+  <tr class="total"><td colspan="3">Total for always-on production</td><td>about USD 14 / month (~USD 168 / year)</td></tr>
+</table>
+
+<h2>3. Is the database separate?</h2>
+<p>The database is always a separate component. On both Render and Railway you create the database inside the same platform, but it is billed as its own service - there is no single combined price for application plus database. On Render it is a separate PostgreSQL instance managed from the same dashboard as the application. Supabase also provides the database as its own managed service. The recommendation above keeps the application and database together on Render for simplicity.</p>
+
+<h2>4. Why a small paid plan, not the free tiers</h2>
+<p>Free application and database plans go to sleep or are paused after a period of inactivity. Because this system is used only around mid-term and final-term, a free database would pause between those periods, and the first users each season would face errors or long delays. To guarantee the system is available when faculty need it, a small always-on paid plan is recommended. The cost is modest (about USD 14 / month).</p>
+
+<h2>5. Why Cloudflare R2 for files</h2>
+<p>R2 uses the same storage standard the application already supports, has a generous free tier (10 GB), and - unlike Amazon S3 - charges no bandwidth (egress) fees, which avoids unexpected bills. Course folders for a single department over a few terms typically fit within the free tier; beyond that the cost is about USD 0.015 per GB per month (for example, 50 GB is under USD 1 / month).</p>
+
+<h2>6. Lower-cost or alternative options</h2>
+<ul>
+  <li><strong>Railway (Hobby, USD 5 / month, includes USD 5 usage credit)</strong>: application and database together, billed by usage; suitable for this low, seasonal load. Cost is slightly more variable than Render.</li>
+  <li><strong>Hetzner Cloud (about EUR 3.79 / month)</strong>: the cheapest option, but it is a self-managed server - it requires a person to maintain updates, security, and backups. Recommended only if the department has someone to administer it.</li>
+  <li><strong>Amazon S3 for files</strong>: works, but it charges egress fees and is more complex to set up than Cloudflare R2.</li>
+  <li><strong>Supabase</strong>: can provide both the database and file storage in one service (free tier available; Pro from USD 25 / month). A good all-in-one alternative if preferred.</li>
+</ul>
+
+<h2>7. Capacity note</h2>
+<p>About 50 users with light, seasonal usage fit comfortably within the smallest paid plans listed. The setup can be scaled up later (more memory, larger database) with a one-click plan change if usage grows beyond one department.</p>
+
+<div class="note">Pricing verified in June 2026 from the providers' official pages (listed below). Confirm current prices on each provider's page before purchase.</div>
+
+<h2>8. Official pricing pages</h2>
+<ul>
+  <li>Render: https://render.com/pricing</li>
+  <li>Cloudflare R2: https://developers.cloudflare.com/r2/pricing/</li>
+  <li>Supabase: https://supabase.com/pricing</li>
+  <li>Railway: https://railway.com/pricing</li>
+  <li>Hetzner Cloud: https://www.hetzner.com/cloud/</li>
+  <li>Brevo (email): https://www.brevo.com/pricing/</li>
+</ul>
+
+</body>
+</html>

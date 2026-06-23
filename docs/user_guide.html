@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 1.8cm; }
+  body { font-family: "Helvetica", "Arial", sans-serif; color: #1C1917; font-size: 11px; line-height: 1.5; }
+  .cover { border-bottom: 3px solid #166534; padding-bottom: 10px; margin-bottom: 16px; }
+  h1 { color: #166534; font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #57534E; font-size: 12px; }
+  .by { margin-top: 8px; font-size: 12px; }
+  h2 { color: #14532D; font-size: 14px; margin: 18px 0 6px; border-bottom: 1px solid #E0DDD3; padding-bottom: 3px; }
+  h3 { color: #166534; font-size: 12px; margin: 12px 0 4px; }
+  ol, ul { margin: 4px 0 8px 18px; padding: 0; }
+  li { margin: 3px 0; }
+  p { margin: 5px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+  th, td { border: 1px solid #A8A29E; padding: 4px 6px; font-size: 10px; text-align: left; vertical-align: top; }
+  th { background: #EFEDE6; }
+  .note { background: #F7F6F2; border: 1px solid #E0DDD3; padding: 6px 8px; margin: 6px 0; }
+  .role { background: #166534; color: #fff; padding: 1px 6px; border-radius: 3px; font-size: 10px; }
+  code { background: #EFEDE6; padding: 0 3px; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>Course Folder Management System</h1>
+  <div class="sub">User Guide - End-to-end usage for Focal Person (Admin) and Faculty</div>
+  <div class="sub">University Institute of Information Technology (UIIT), PMAS Arid Agriculture University, Rawalpindi</div>
+  <div class="by"><strong>Prepared by: Noman Amjad</strong></div>
+</div>
+
+<h2>1. What the system does</h2>
+<p>The system lets faculty assemble, per course, the documents required by the official Course Folder Review checklist (28 items). The Focal Person (Admin) reviews each folder, flags missing items, and issues the Course Folder Review Certificate once every required item is complete. The checklist is two-phase: a Mid-term submission and a Final-term submission.</p>
+<p>There are two roles:</p>
+<ul>
+  <li><span class="role">Admin</span> Focal Person. Full access: manages faculty, terms and courses; reviews every folder; approves or returns; issues certificates; views reports.</li>
+  <li><span class="role">Faculty</span> Sees only their own courses. Uploads documents, marks items not applicable, and submits folders for review.</li>
+</ul>
+
+<h2>2. Signing in</h2>
+<ol>
+  <li>Open the system web address in a browser.</li>
+  <li>On the home page, click <strong>Sign in</strong> (the address is <code>/login/</code>).</li>
+  <li>Enter your <strong>email</strong> and <strong>password</strong> and click <strong>Sign in</strong>. The system sends each user to the correct dashboard based on their role.</li>
+</ol>
+<p class="note">The very first Admin account is created once by the system administrator during setup. Every other user is added by the Admin through the invitation process described below; no one can self-register.</p>
+
+<h2>3. Focal Person (Admin) - step by step</h2>
+
+<h3>3.1 Create a term and mark it current</h3>
+<ol>
+  <li>From the dashboard, open <strong>Manage terms</strong>.</li>
+  <li>In <strong>Add a term</strong>, choose the <strong>Season</strong> (Spring, Summer, or Fall), enter the <strong>Year</strong>, optionally the start and end dates, tick <strong>Mark as current term</strong>, and click <strong>Add term</strong>.</li>
+  <li>To change the active term later, click <strong>Set current</strong> next to any term. Only one term is current at a time.</li>
+</ol>
+
+<h3>3.2 Add a course and assign it to a faculty member</h3>
+<ol>
+  <li>Open <strong>Manage courses</strong>.</li>
+  <li>In <strong>Add a course</strong>, fill in code, title, section, program, semester, credit hours, choose the <strong>instructor</strong> (an active faculty member) and the <strong>term</strong>, then click <strong>Add course</strong>.</li>
+  <li>The course folder with all 28 checklist items is created automatically for that course.</li>
+</ol>
+
+<h3>3.3 Invite a faculty member</h3>
+<ol>
+  <li>Open <strong>Manage faculty</strong>, then click <strong>Add faculty</strong>.</li>
+  <li>Enter the person's <strong>name</strong> and <strong>email</strong> and send the invitation.</li>
+  <li>The system emails that address a single-use, time-limited link. The Admin never sets or sees the faculty member's password.</li>
+  <li>On <strong>Manage faculty</strong> you can search by name or email and <strong>Deactivate</strong> or <strong>Reactivate</strong> any member. A deactivated member cannot sign in; their past courses are preserved.</li>
+</ol>
+
+<h3>3.4 Review a submitted folder</h3>
+<ol>
+  <li>Open <strong>Review folders</strong> to see the queue of folders awaiting review.</li>
+  <li>Click <strong>Review</strong> on a folder. Missing or incomplete required items are highlighted in red.</li>
+  <li>To send it back, tick <strong>Flag this item</strong> on the problem items, add a note for each, write an overall note, and click <strong>Return for revision</strong>. The faculty member sees the notes and resubmits.</li>
+  <li>To accept, click <strong>Approve</strong>. The mid-term phase is approved first; the final phase is reviewed after the faculty member submits it.</li>
+</ol>
+
+<h3>3.5 Issue the certificate</h3>
+<ol>
+  <li>After both phases are approved, the review screen shows <strong>Issue certificate</strong>.</li>
+  <li>Click it to generate the Course Folder Review Certificate (PDF). The folder becomes <strong>Certified</strong>.</li>
+  <li>Issuance is blocked if any required, applicable item is still missing.</li>
+</ol>
+
+<h3>3.6 Reports and search</h3>
+<ol>
+  <li><strong>Reports</strong>: see how many folders are Certified, In review, or Pending, with the missing items per course. Filter by term, program, faculty, or status, and export to <strong>PDF</strong> or <strong>Excel</strong>.</li>
+  <li><strong>Find courses</strong>: search across all courses by code, title, or faculty name; results update as you type.</li>
+</ol>
+
+<h2>4. Faculty - step by step</h2>
+
+<h3>4.1 Activate your account</h3>
+<ol>
+  <li>Open the invitation email and click the secure link.</li>
+  <li>On <strong>Set your password</strong>, choose a password and confirm it. Your password is saved securely and you are signed in. The link works once and expires after a few days.</li>
+</ol>
+
+<h3>4.2 Open a course folder</h3>
+<ol>
+  <li>After signing in you see <strong>My courses</strong> for the current term. Use the term switch to view past terms, or the search box to filter your courses.</li>
+  <li>Click a course card, then <strong>Open course folder</strong>.</li>
+  <li>The folder is grouped into <strong>General</strong>, <strong>Mid-term</strong>, and <strong>Final-term</strong> sections, each with a progress bar.</li>
+</ol>
+
+<h3>4.3 Upload documents</h3>
+<ol>
+  <li>For an item, click <strong>Choose File</strong>, select the document, then <strong>Upload</strong>. A confirmation appears next to that item and the item turns <strong>Available</strong>.</li>
+  <li>Allowed file types: PDF, DOC, DOCX, JPG, PNG. Maximum size: 50 MB. Images show a thumbnail.</li>
+  <li>To remove a file, click <strong>Delete</strong> under it.</li>
+</ol>
+
+<h3>4.4 Worst / Average / Best samples</h3>
+<p>Items marked (W, A, B) - quizzes, assignments, mid and final exam scripts - require three samples: a <strong>Worst</strong>, an <strong>Average</strong>, and a <strong>Best</strong> example. Upload one file into each of the three groups. The item counts as complete only when all three groups have a file.</p>
+
+<h3>4.5 Mark an item Not Applicable</h3>
+<ol>
+  <li>If an item does not apply (for example, a theory course with no lab, or no project this semester), click <strong>Mark N/A</strong> and optionally give a reason.</li>
+  <li>Not-applicable items are excluded from the completeness count. You can click <strong>Mark applicable</strong> later to require it again, for example before the final submission.</li>
+  <li>Count-variable items (extra quizzes or assignments) can be added with <strong>Add quiz</strong> / <strong>Add assignment</strong> and removed if unused.</li>
+</ol>
+
+<h3>4.6 Submit, revise, and complete</h3>
+<ol>
+  <li>When all required General and Mid-term items are Available, click <strong>Submit mid-term for review</strong>.</li>
+  <li>If the Admin returns the folder, read the red notes on the flagged items, fix them, and submit again.</li>
+  <li>After the mid-term is approved and the final-term items are complete, click <strong>Submit final-term for review</strong>.</li>
+  <li>Once certified, a <strong>Download certificate</strong> button appears on the folder.</li>
+</ol>
+
+<h2>5. Passwords</h2>
+<ul>
+  <li><strong>Setting your password:</strong> done once through the invitation link (faculty) or at account creation (first admin).</li>
+  <li><strong>Forgot password:</strong> on the sign-in page click <strong>Forgot your password?</strong>, enter your email, and follow the reset link sent to you.</li>
+  <li>Passwords are stored only in secure hashed form; they are never emailed or shown to anyone.</li>
+</ul>
+
+<h2>6. Rules to remember</h2>
+<ul>
+  <li>The checklist has 28 items in total; 23 are required and 5 are optional (extra quizzes, extra assignments, and projects).</li>
+  <li>No certificate is issued while any required, applicable item is missing.</li>
+  <li>Faculty can only see and edit their own courses. The Admin can view any folder but does not edit a faculty member's files; the Admin reviews and decides.</li>
+  <li>Every important action (submit, approve, return, upload, delete, issue) is recorded in an audit log.</li>
+</ul>
+
+</body>
+</html>
