@@ -2,7 +2,7 @@
 <form method="post" enctype="multipart/form-data" action="{% url 'file_upload' item.pk %}"
       class="mt-2 flex items-center gap-2"
       hx-post="{% url 'file_upload' item.pk %}"
-      hx-target="#evidence-{{ item.pk }}"
+      hx-target="#item-{{ item.pk }}"
       hx-swap="outerHTML"
       hx-encoding="multipart/form-data">
   {% csrf_token %}

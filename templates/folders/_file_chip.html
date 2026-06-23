@@ -16,7 +16,7 @@
   {% if not readonly %}
     <form method="post" action="{% url 'file_delete' f.pk %}"
           hx-post="{% url 'file_delete' f.pk %}"
-          hx-target="#evidence-{{ item.pk }}"
+          hx-target="#item-{{ item.pk }}"
           hx-swap="outerHTML"
           hx-confirm="Delete &ldquo;{{ f.original_name|escapejs }}&rdquo;?"
           onsubmit="return confirm('Delete “{{ f.original_name|escapejs }}”?');"
