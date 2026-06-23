@@ -1,0 +1,8 @@
+{# Overall completeness bar. Context: prog (done/total/percent). #}
+<div class="flex items-center justify-between text-sm">
+  <span class="font-medium text-foreground">Overall completeness (required items)</span>
+  <span class="text-muted-foreground">{{ prog.done }} / {{ prog.total }}</span>
+</div>
+<div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+  <div class="h-2 rounded-full bg-primary" style="width: {{ prog.percent }}%"></div>
+</div>

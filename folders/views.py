@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Max
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -53,6 +53,24 @@ def _require_folder_owner(request, course):
     """
     if course.instructor_id != request.user.id:
         raise PermissionDenied
+
+
+_PHASE_LABELS = {Phase.GENERAL: "General", Phase.MID: "Mid-term", Phase.FINAL: "Final-term"}
+
+
+def _item_update(request, folder, phase, item=None, **row_ctx):
+    """HTMX response: the item row (or nothing, if removed) plus out-of-band
+    refreshes of the overall and that phase's section progress bars."""
+    items = list(folder.items.all())
+    context = {
+        "item": item,
+        "overall": CourseFolder.progress(items),
+        "phase": phase,
+        "phase_label": _PHASE_LABELS.get(phase, ""),
+        "section_prog": CourseFolder.progress([i for i in items if i.phase == phase]),
+    }
+    context.update(row_ctx)
+    return render(request, "folders/_item_update.html", context)
 
 
 @login_required
@@ -138,9 +156,9 @@ def item_add(request, course_id):
         status=ItemStatus.PENDING,
     )
     record(request.user, "item_add", item, course=course.pk, title=item.title)
-    # HTMX: return just the new row to append into the section list (no page jump).
+    # HTMX: append the new row to the section list and refresh the progress bars.
     if request.htmx:
-        return render(request, "folders/_item_row.html", {"item": item})
+        return _item_update(request, folder, item.phase, item=item)
     messages.success(request, f"Added “{item.title}”.")
     return redirect("folder_detail", course_id=course.pk)
 
@@ -158,22 +176,22 @@ def item_remove(request, item_id):
     if not item.is_removable:
         if request.htmx:
             # Re-render the row unchanged with an inline error note.
-            return render(request, "folders/_item_row.html",
-                          {"item": item,
-                           "upload_error": "This item is part of the standard "
-                                           "checklist and cannot be removed."})
+            return _item_update(
+                request, item.folder, item.phase, item=item,
+                upload_error="This item is part of the standard checklist and "
+                             "cannot be removed.")
         messages.error(
             request,
             "This item is part of the standard checklist and cannot be removed.",
         )
         return redirect("folder_detail", course_id=course.pk)
 
-    title = item.title
+    folder, phase, title = item.folder, item.phase, item.title
     item.delete()
     record(request.user, "item_remove", course, title=title)
-    # HTMX: empty response + outerHTML swap removes the row in place.
+    # HTMX: no row (it is removed) + out-of-band progress refresh.
     if request.htmx:
-        return HttpResponse("")
+        return _item_update(request, folder, phase, item=None)
     messages.success(request, f"Removed “{title}”.")
     return redirect("folder_detail", course_id=course.pk)
 
@@ -193,11 +211,11 @@ def file_upload(request, item_id):
     """Upload a file to a checklist item (stored in private object storage)."""
     item = _get_item_for_edit(request, item_id)
     def _respond(error=None, uploaded_name=None):
-        # HTMX: swap the whole item row in place (status + evidence; no page jump).
+        # HTMX: swap the row in place (status + evidence) and refresh progress bars.
         if request.htmx:
             item.refresh_from_db()
-            return render(request, "folders/_item_row.html",
-                          {"item": item, "upload_error": error, "uploaded_name": uploaded_name})
+            return _item_update(request, item.folder, item.phase, item=item,
+                                upload_error=error, uploaded_name=uploaded_name)
         if error:
             messages.error(request, error)
         elif uploaded_name:
@@ -272,7 +290,7 @@ def file_delete(request, file_id):
     delete_item_file(item_file, user=request.user)
     if request.htmx:
         item.refresh_from_db()
-        return render(request, "folders/_item_row.html", {"item": item})
+        return _item_update(request, item.folder, item.phase, item=item)
     messages.success(request, f"Deleted “{name}”.")
     return redirect("folder_detail", course_id=course_id)
 
@@ -288,7 +306,7 @@ def item_mark_na(request, item_id):
     item.save(update_fields=["status", "na_note"])
     record(request.user, "item_mark_na", item, note=item.na_note)
     if request.htmx:
-        return render(request, "folders/_item_row.html", {"item": item})
+        return _item_update(request, item.folder, item.phase, item=item)
     messages.success(request, f"“{item.title}” marked not applicable.")
     return redirect("folder_detail", course_id=item.folder.course_id)
 
@@ -305,6 +323,6 @@ def item_clear_na(request, item_id):
     recompute_item_status(item)
     record(request.user, "item_clear_na", item)
     if request.htmx:
-        return render(request, "folders/_item_row.html", {"item": item})
+        return _item_update(request, item.folder, item.phase, item=item)
     messages.success(request, f"“{item.title}” marked applicable.")
     return redirect("folder_detail", course_id=item.folder.course_id)

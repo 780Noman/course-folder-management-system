@@ -1,0 +1,10 @@
+{# HTMX response for an item action: the (optional) row, plus out-of-band
+   updates for the overall and section progress bars. Context: item (or None),
+   overall, phase, phase_label, section_prog (+ optional uploaded_name/upload_error). #}
+{% if item %}{% include "folders/_item_row.html" %}{% endif %}
+<div id="overall-progress" hx-swap-oob="true">
+  {% include "folders/_progress_overall.html" with prog=overall %}
+</div>
+<div id="progress-{{ phase }}" hx-swap-oob="true">
+  {% include "folders/_progress_section.html" with label=phase_label prog=section_prog %}
+</div>
