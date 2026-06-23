@@ -1,13 +1,29 @@
 """Account / authentication URLs."""
 
 from django.contrib.auth import views as auth_views
-from django.urls import path
+from django.urls import path, reverse_lazy
 
 from . import views
 
 urlpatterns = [
     path("login/", views.RoleLoginView.as_view(), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+    # Change password (logged-in users; the view is login-required)
+    path(
+        "password-change/",
+        auth_views.PasswordChangeView.as_view(
+            template_name="registration/password_change_form.html",
+            success_url=reverse_lazy("password_change_done"),
+        ),
+        name="password_change",
+    ),
+    path(
+        "password-change/done/",
+        auth_views.PasswordChangeDoneView.as_view(
+            template_name="registration/password_change_done.html",
+        ),
+        name="password_change_done",
+    ),
     # Password reset (Django built-in views with project templates)
     path(
         "password-reset/",

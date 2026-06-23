@@ -18,6 +18,10 @@
           {% if request.user.is_admin %}Focal Person{% else %}Faculty{% endif %}
         </span>
       </span>
+      <a href="{% url 'password_change' %}"
+         class="cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        Change password
+      </a>
       <form method="post" action="{% url 'logout' %}">
         {% csrf_token %}
         <button type="submit"
