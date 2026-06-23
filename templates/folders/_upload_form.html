@@ -1,5 +1,4 @@
-{# Upload form for `item`. Pass `sample_kind` to upload into a W/A/B group.
-   Uploads inline via HTMX, swapping just this item's evidence area. #}
+{# Upload form for an item; pass sample_kind to upload into a W/A/B group (inline via HTMX). #}
 <form method="post" enctype="multipart/form-data" action="{% url 'file_upload' item.pk %}"
       class="mt-2 flex items-center gap-2"
       hx-post="{% url 'file_upload' item.pk %}"

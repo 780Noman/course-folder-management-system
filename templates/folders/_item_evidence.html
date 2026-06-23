@@ -1,5 +1,4 @@
-{# Swappable evidence area for one checklist item (HTMX target).
-   Context: item, optional uploaded_name (success), optional upload_error. #}
+{# Swappable evidence area for one checklist item (HTMX target). #}
 <div id="evidence-{{ item.pk }}" class="mt-3">
   {% if uploaded_name %}
     <div x-data="{s:true}" x-show="s" x-init="setTimeout(() => s = false, 4000)" x-transition.opacity

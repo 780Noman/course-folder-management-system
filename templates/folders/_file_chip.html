@@ -1,5 +1,4 @@
-{# Renders one uploaded file `f` as a clickable thumbnail/name chip with delete.
-   Pass readonly=True (admin review) to hide the delete control. #}
+{# One uploaded file f as a thumbnail/name chip; pass readonly=True to hide delete. #}
 <li class="w-28">
   <a href="{% url 'file_open' f.pk %}" target="_blank" rel="noopener"
      title="{{ f.original_name }}"
