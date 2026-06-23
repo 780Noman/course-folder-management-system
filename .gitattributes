@@ -4,3 +4,10 @@
 docker/entrypoint.sh text eol=lf
 Dockerfile text eol=lf
 *.dockerfile text eol=lf
+
+# Binary assets: never apply line-ending conversion
+*.pdf binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.docx binary
