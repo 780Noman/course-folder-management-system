@@ -32,9 +32,14 @@ services:
       DJANGO_SETTINGS_MODULE: config.settings.prod
     ports:
       - "8000:8000"
+    volumes:
+      # Persist uploaded files / certificates when storing on the server itself
+      # (i.e. when no S3/R2 bucket is configured). Survives rebuilds/restarts.
+      - media:/app/media
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   pgdata:
+  media:

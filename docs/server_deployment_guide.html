@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 1.7cm; }
+  body { font-family: "Helvetica", "Arial", sans-serif; color: #1C1917; font-size: 10.5px; line-height: 1.5; }
+  .cover { border-bottom: 3px solid #166534; padding-bottom: 10px; margin-bottom: 14px; }
+  h1 { color: #166534; font-size: 19px; margin: 0 0 4px; }
+  .sub { color: #57534E; font-size: 11px; }
+  .by { margin-top: 8px; font-size: 11px; }
+  h2 { color: #14532D; font-size: 13px; margin: 16px 0 5px; border-bottom: 1px solid #E0DDD3; padding-bottom: 3px; }
+  h3 { color: #166534; font-size: 11.5px; margin: 11px 0 3px; }
+  p { margin: 4px 0; }
+  ol, ul { margin: 3px 0 7px 17px; }
+  li { margin: 3px 0; }
+  code { background: #EFEDE6; padding: 0 3px; font-family: "Courier New", monospace; }
+  pre { background: #F3F2EE; border: 1px solid #E0DDD3; padding: 7px 9px; font-family: "Courier New", monospace;
+        font-size: 9.5px; white-space: pre-wrap; word-wrap: break-word; margin: 5px 0; }
+  .note { background: #F7F6F2; border: 1px solid #E0DDD3; padding: 6px 8px; margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+  th, td { border: 1px solid #A8A29E; padding: 4px 6px; font-size: 9.5px; text-align: left; vertical-align: top; }
+  th { background: #EFEDE6; }
+  .warn { background: #FEF2F2; border: 1px solid #FCA5A5; padding: 6px 8px; margin: 6px 0; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>Course Folder Management System</h1>
+  <div class="sub">Server Deployment Guide (self-hosted, on-premise) - end to end</div>
+  <div class="sub">University Institute of Information Technology (UIIT), PMAS Arid Agriculture University, Rawalpindi</div>
+  <div class="by"><strong>Prepared by: Noman Amjad</strong></div>
+</div>
+
+<p>This guide deploys the system on your own Linux server using Docker. Everything
+runs on the one server: the web application, the PostgreSQL database, and the
+uploaded files. No cloud account is required. Follow the steps in order; by the
+end the system is reachable in a browser and the focal person can log in.</p>
+
+<div class="note"><strong>What you need before starting:</strong> (1) a server running
+<strong>Ubuntu Server 22.04 or 24.04</strong> (a physical machine or a virtual
+machine) that you can log into; (2) administrator (sudo) access on it; (3) the
+server's IP address on your network (for example 192.168.1.50); (4) access to the
+private GitHub repository (a GitHub account that can read it).</div>
+
+<h2>1. Log in to the server</h2>
+<p>From your own computer, open a terminal (on Windows use PowerShell) and connect
+over SSH. Replace the user and IP with yours:</p>
+<pre>ssh youruser@192.168.1.50</pre>
+<p>Enter the password when asked. You are now on the server. All commands below are
+run on the server unless stated otherwise.</p>
+
+<h2>2. Install Docker and Docker Compose</h2>
+<p>Update the system and install Docker using the official script, then add your
+user to the docker group so you do not need sudo each time:</p>
+<pre>sudo apt update &amp;&amp; sudo apt -y upgrade
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+newgrp docker
+docker --version
+docker compose version</pre>
+<p>If the last two commands print version numbers, Docker is ready. (Docker Compose
+v2 is included with Docker; you call it as <code>docker compose</code>.)</p>
+
+<h2>3. Get the project onto the server</h2>
+<p>The repository is private, so cloning needs a GitHub <strong>Personal Access
+Token (PAT)</strong> instead of your normal password.</p>
+<h3>3.1 Create a token (once, in your browser on any computer)</h3>
+<ol>
+  <li>Go to GitHub - Settings - Developer settings - Personal access tokens -
+      Tokens (classic) - Generate new token (classic).</li>
+  <li>Give it a name, set an expiry, tick the <strong>repo</strong> scope, and
+      generate it. Copy the token (it is shown once).</li>
+</ol>
+<h3>3.2 Clone on the server</h3>
+<pre>sudo apt -y install git
+git clone https://github.com/780Noman/course-folder-management-system.git
+# Username: your GitHub username
+# Password: paste the Personal Access Token (not your account password)
+cd course-folder-management-system</pre>
+<p class="note">Alternative without git: on GitHub click <strong>Code - Download ZIP</strong>,
+then copy it to the server with <code>scp course-folder-management-system.zip youruser@192.168.1.50:~</code>,
+and on the server run <code>sudo apt -y install unzip &amp;&amp; unzip course-folder-management-system.zip</code>.</p>
+
+<h2>4. Create the configuration file (.env)</h2>
+<p>The application reads all secrets and settings from a file named <code>.env</code>.
+Start from the example and edit it:</p>
+<pre>cp .env.example .env
+nano .env</pre>
+<p>Set these values (leave the rest as they are). Use your server's IP address.</p>
+<table>
+  <tr><th>Setting</th><th>Value to put</th></tr>
+  <tr><td><code>DJANGO_SETTINGS_MODULE</code></td><td><code>config.settings.prod</code></td></tr>
+  <tr><td><code>SECRET_KEY</code></td><td>a long random string (generate it in step 4.1)</td></tr>
+  <tr><td><code>DEBUG</code></td><td><code>False</code></td></tr>
+  <tr><td><code>ALLOWED_HOSTS</code></td><td>your server IP, e.g. <code>192.168.1.50</code> (add a domain too if you have one, comma-separated)</td></tr>
+  <tr><td><code>DATABASE_URL</code></td><td><code>postgres://postgres:CHANGE_DB_PASSWORD@db:5432/coursefolders</code></td></tr>
+  <tr><td><code>POSTGRES_PASSWORD</code></td><td>the same <code>CHANGE_DB_PASSWORD</code> you used above</td></tr>
+  <tr><td><code>ENABLE_HTTPS</code></td><td><code>False</code> (internal HTTP access). Set <code>True</code> only if you put it behind HTTPS.</td></tr>
+  <tr><td><code>CSRF_TRUSTED_ORIGINS</code></td><td><code>http://192.168.1.50:8000</code> (must match how users open it)</td></tr>
+  <tr><td><code>PDF_ENGINE</code></td><td><code>weasyprint</code> (the server image includes it)</td></tr>
+</table>
+<p>Leave the <code>AWS_*</code> storage values <strong>empty</strong> - this makes the
+system store uploaded files on the server itself (kept safe in a Docker volume).
+Leave the <code>EMAIL_*</code> values empty for now; invitations can be set without
+email (see step 8). In nano, save with Ctrl+O then Enter, and exit with Ctrl+X.</p>
+
+<h3>4.1 Generate the SECRET_KEY</h3>
+<pre>docker run --rm python:3.12-slim python -c "import secrets; print(secrets.token_urlsafe(50))"</pre>
+<p>Copy the printed line into <code>SECRET_KEY</code> in <code>.env</code>.</p>
+
+<div class="warn"><strong>Important:</strong> never share or commit the <code>.env</code>
+file. It contains your secret key and database password.</div>
+
+<h2>5. Build and start the system</h2>
+<pre>docker compose -f docker-compose.prod.yml up -d --build</pre>
+<p>The first run downloads and builds everything (a few minutes). It starts two
+containers: the database and the web application. The web container automatically
+applies the database migrations and collects static files on start.</p>
+<p>Check that both are running and watch the logs:</p>
+<pre>docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f web</pre>
+<p>When the log shows Gunicorn has started (workers booted), press Ctrl+C to stop
+watching the log (this does not stop the server).</p>
+
+<h2>6. Open the firewall (if enabled)</h2>
+<p>If the Ubuntu firewall is on, allow the application port:</p>
+<pre>sudo ufw allow 8000/tcp</pre>
+
+<h2>7. Open the system in a browser</h2>
+<p>On any computer on the same network, open:</p>
+<pre>http://192.168.1.50:8000</pre>
+<p>You should see the home page with a Sign in button. (If it does not load, see
+the Troubleshooting section.)</p>
+
+<h2>8. Create the first administrator (focal person)</h2>
+<p>This is the one account you create by hand; it has full access and then invites
+everyone else. Run:</p>
+<pre>docker compose -f docker-compose.prod.yml run --rm web python manage.py createsuperuser</pre>
+<p>Enter an email (for example <code>focal@uiit.edu.pk</code>), a name, and a
+password. For now use a simple but valid password such as
+<code>Uiit@2026</code> (at least 8 characters, not all numbers). The focal person
+can change it after first login from the navbar link <strong>Change password</strong>.</p>
+
+<h2>9. First login and smoke test</h2>
+<ol>
+  <li>Open <code>http://192.168.1.50:8000</code> and sign in as the focal person.</li>
+  <li>Create a <strong>Term</strong> and mark it current; create a <strong>Course</strong>
+      and assign an instructor.</li>
+  <li>Open <strong>Manage faculty - Add faculty</strong> to invite a teacher (see
+      the email note below).</li>
+  <li>As that faculty member, open the course folder, upload a file, and submit the
+      mid-term; as the focal person, review and approve, then issue the certificate.</li>
+</ol>
+<p class="note"><strong>About invitations/email:</strong> if the <code>EMAIL_*</code>
+settings are empty, the invitation link is written to the server log instead of
+being emailed. To read it after clicking "Send invitation", run
+<code>docker compose -f docker-compose.prod.yml logs --tail=50 web</code> and copy the
+link. To send real emails later, fill the <code>EMAIL_*</code> values in
+<code>.env</code> (university SMTP or a free provider) and restart with the command
+in step 11.</p>
+
+<h2>10. Day-to-day operations</h2>
+<table>
+  <tr><th>Task</th><th>Command (run inside the project folder)</th></tr>
+  <tr><td>See running containers</td><td><code>docker compose -f docker-compose.prod.yml ps</code></td></tr>
+  <tr><td>View logs</td><td><code>docker compose -f docker-compose.prod.yml logs -f web</code></td></tr>
+  <tr><td>Stop the system</td><td><code>docker compose -f docker-compose.prod.yml down</code></td></tr>
+  <tr><td>Start it again</td><td><code>docker compose -f docker-compose.prod.yml up -d</code></td></tr>
+  <tr><td>Create another admin</td><td><code>docker compose -f docker-compose.prod.yml run --rm web python manage.py createsuperuser</code></td></tr>
+</table>
+<p>The system restarts automatically if the server reboots (the containers are set
+to restart unless stopped).</p>
+
+<h2>11. Updating to a new version</h2>
+<pre>cd course-folder-management-system
+git pull
+docker compose -f docker-compose.prod.yml up -d --build</pre>
+<p>Migrations and static files are handled automatically on start. Your data
+(database and uploaded files) is preserved in Docker volumes and is not affected
+by rebuilds.</p>
+
+<h2>12. Backups (do this regularly)</h2>
+<p>Two things must be backed up: the database and the uploaded files.</p>
+<pre># Database backup (writes a dated file to your home folder)
+docker compose -f docker-compose.prod.yml exec -T db \
+  pg_dump -U postgres coursefolders > ~/coursefolders-$(date +%F).sql
+
+# Uploaded files backup (copies the media volume to a tar file)
+docker run --rm -v course-folder-management-system_media:/m -v $HOME:/out \
+  busybox tar czf /out/media-$(date +%F).tar.gz -C /m .</pre>
+<p>Copy these backup files off the server (to another disk or location). To restore,
+load the .sql with <code>psql</code> and extract the media tar back into the volume.
+See <code>docs/BACKUPS.md</code> in the project for details.</p>
+
+<h2>13. Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>What to do</th></tr>
+  <tr><td>Page does not open in the browser</td><td>Check containers are up (step 10), and the firewall allows port 8000 (step 6). Confirm you used <code>http://</code> and the correct IP and port.</td></tr>
+  <tr><td>"Bad Request (400)"</td><td>The server IP/domain is not in <code>ALLOWED_HOSTS</code> in <code>.env</code>. Add it, then restart (step 11, the rebuild line).</td></tr>
+  <tr><td>Login or buttons fail with a CSRF/403 error</td><td>Set <code>CSRF_TRUSTED_ORIGINS</code> to exactly how users open the site, e.g. <code>http://192.168.1.50:8000</code>, and keep <code>ENABLE_HTTPS=False</code> for plain HTTP. Restart.</td></tr>
+  <tr><td>It redirects to https and won't load</td><td><code>ENABLE_HTTPS</code> must be <code>False</code> for plain HTTP access. Fix it in <code>.env</code> and restart.</td></tr>
+  <tr><td>Database errors on start</td><td>Make sure <code>POSTGRES_PASSWORD</code> and the password inside <code>DATABASE_URL</code> match. Then <code>down</code> and <code>up</code> again.</td></tr>
+</table>
+
+<h2>14. Optional: HTTPS and a friendly address</h2>
+<p>For access by a name (e.g. https://folders.uiit.edu.pk) with a padlock, place a
+reverse proxy (Caddy or Nginx) in front that terminates TLS and forwards to port
+8000, then set <code>ENABLE_HTTPS=True</code> and add the domain to
+<code>ALLOWED_HOSTS</code> and <code>CSRF_TRUSTED_ORIGINS</code>. This needs a DNS
+name pointing at the server and is best done with help from the network
+administrator. It is not required for internal use by IP.</p>
+
+</body>
+</html>
