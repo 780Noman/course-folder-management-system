@@ -23,6 +23,10 @@ db.sqlite3
 /.agents/
 /.claude/skills/
 
+# Large media / archives (kept out of git)
+*.mp4
+*.zip
+
 # Tooling
 .pytest_cache/
 .coverage
