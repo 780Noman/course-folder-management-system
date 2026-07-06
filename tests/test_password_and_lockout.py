@@ -70,6 +70,51 @@ def test_lockout_after_repeated_failures(client, faculty_user, settings):
     assert resp.wsgi_request.user.is_authenticated is False
 
 
+def test_admin_login_is_locked_out_too(client, admin_user, settings):
+    """The Django admin login must enforce the same lockout as the main login
+    page — otherwise superusers could be brute-forced via /admin/login/."""
+    settings.LOGIN_FAILURE_LIMIT = 3
+    settings.LOGIN_LOCKOUT_SECONDS = 900
+    url = "/admin/login/"
+
+    for _ in range(3):
+        resp = client.post(
+            url, {"username": admin_user.email, "password": "wrong"}
+        )
+        assert resp.status_code == 200  # admin login re-render with error
+
+    # Locked: even the correct password is refused now.
+    resp = client.post(url, {"username": admin_user.email, "password": PASSWORD})
+    assert resp.status_code == 429
+    assert b"Too many failed sign-in attempts" in resp.content
+    assert resp.wsgi_request.user.is_authenticated is False
+
+
+def test_main_and_admin_login_share_the_counter(client, admin_user, settings):
+    """Failures on the main login count against /admin/login/ as well (same
+    (IP, email) bucket) — no separate budget per endpoint."""
+    settings.LOGIN_FAILURE_LIMIT = 3
+    settings.LOGIN_LOCKOUT_SECONDS = 900
+
+    for _ in range(3):
+        client.post(
+            reverse("login"), {"username": admin_user.email, "password": "wrong"}
+        )
+    resp = client.post(
+        "/admin/login/", {"username": admin_user.email, "password": PASSWORD}
+    )
+    assert resp.status_code == 429
+
+
+def test_admin_login_success_still_works(client, admin_user):
+    resp = client.post(
+        "/admin/login/",
+        {"username": admin_user.email, "password": PASSWORD, "next": "/admin/"},
+    )
+    assert resp.status_code == 302
+    assert resp.wsgi_request.user.is_authenticated is True
+
+
 def test_successful_login_clears_failure_counter(client, faculty_user, settings):
     settings.LOGIN_FAILURE_LIMIT = 3
     url = reverse("login")

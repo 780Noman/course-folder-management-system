@@ -104,3 +104,36 @@ def test_duplicate_email_is_rejected(admin_client, faculty_user):
     assert resp.status_code == 200  # re-render with error, no redirect
     assert b"already exists" in resp.content
     assert len(mail.outbox) == 0
+
+
+def test_failed_email_rolls_back_account_and_shows_error(admin_client, monkeypatch):
+    """If the SMTP send fails, no orphaned user row may remain (it would block
+    re-inviting the same address) and the admin sees an actionable error."""
+    import smtplib
+
+    from accounts import views as accounts_views
+
+    def _boom(user, request):
+        raise smtplib.SMTPException("connection refused")
+
+    monkeypatch.setattr(accounts_views, "send_invite_email", _boom)
+
+    resp = admin_client.post(
+        reverse("invite_user"),
+        {"name": "New Teacher", "email": "new@uiit.edu.pk", "role": "FACULTY"},
+    )
+    assert resp.status_code == 200  # re-render, not a 500
+    assert b"could not be sent" in resp.content
+    # Rolled back: the address stays free, so retrying works.
+    assert not User.objects.filter(email="new@uiit.edu.pk").exists()
+
+    # Retry succeeds once email works again.
+    monkeypatch.undo()
+    resp = admin_client.post(
+        reverse("invite_user"),
+        {"name": "New Teacher", "email": "new@uiit.edu.pk", "role": "FACULTY"},
+        follow=True,
+    )
+    assert resp.status_code == 200
+    assert User.objects.filter(email="new@uiit.edu.pk").exists()
+    assert len(mail.outbox) == 1

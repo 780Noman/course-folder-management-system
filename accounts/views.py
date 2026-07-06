@@ -1,9 +1,13 @@
 """Authentication and dashboard views."""
 
+import logging
+import smtplib
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, PasswordResetConfirmView
+from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -16,6 +20,8 @@ from .emails import send_invite_email
 from .forms import InviteForm
 from .models import User
 from .permissions import admin_required, faculty_required
+
+logger = logging.getLogger(__name__)
 
 
 class RoleLoginView(LoginView):
@@ -49,6 +55,37 @@ class RoleLoginView(LoginView):
         return super().form_invalid(form)
 
 
+def admin_login(request, extra_context=None):
+    """Django admin's login wrapped with the same (IP, email) throttling as
+    the main login page, so staff accounts can't be brute-forced via /admin/.
+
+    Routed at admin/login/ ahead of the admin site's own URLs.
+    """
+    from django.contrib import admin as django_admin
+    from django.contrib.auth.forms import AuthenticationForm
+
+    email = request.POST.get("username", "")
+    if request.method == "POST" and ratelimit.is_locked(request, email):
+        minutes = max(1, settings.LOGIN_LOCKOUT_SECONDS // 60)
+        return render(
+            request,
+            "accounts/login.html",
+            {
+                "form": AuthenticationForm(request),
+                "locked": True,
+                "lockout_minutes": minutes,
+            },
+            status=429,
+        )
+    response = django_admin.site.login(request, extra_context)
+    if request.method == "POST":
+        if request.user.is_authenticated:
+            ratelimit.clear_failures(request, email)
+        else:
+            ratelimit.record_failure(request, email)
+    return response
+
+
 @admin_required
 def invite_user(request):
     """Admin invites a user by name + email; a one-time set-password link is sent."""
@@ -58,9 +95,29 @@ def invite_user(request):
             user = form.save(commit=False)
             # No usable password until the invitee sets one via the emailed link.
             user.set_unusable_password()
-            user.save()
-            send_invite_email(user, request)
-            record(request.user, "user_invite", user, email=user.email, role=user.role)
+            try:
+                # Atomic: if the email cannot be sent, the account is rolled
+                # back so the admin can simply retry (no orphaned user row that
+                # would block re-inviting the same address).
+                with transaction.atomic():
+                    user.save()
+                    send_invite_email(user, request)
+                    record(
+                        request.user, "user_invite", user,
+                        email=user.email, role=user.role,
+                    )
+            except (smtplib.SMTPException, OSError):
+                logger.exception(
+                    "Invite email to %s failed; account creation rolled back.",
+                    user.email,
+                )
+                messages.error(
+                    request,
+                    "The invitation email could not be sent, so the account "
+                    "was not created. Check the email (SMTP) settings and "
+                    "try again.",
+                )
+                return render(request, "accounts/invite_form.html", {"form": form})
             messages.success(
                 request, f"Invitation sent to {user.email}."
             )

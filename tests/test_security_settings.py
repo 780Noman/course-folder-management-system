@@ -50,3 +50,42 @@ def test_csrf_and_clickjacking_middleware_enabled(settings):
 def test_lockout_configured(settings):
     assert settings.LOGIN_FAILURE_LIMIT >= 1
     assert settings.LOGIN_LOCKOUT_SECONDS >= 1
+
+
+def test_prod_cache_is_process_shared(prod_settings):
+    """Lockout counters live in the cache; it must be shared across Gunicorn
+    workers (LocMemCache would silently weaken the login lockout)."""
+    backend = prod_settings.CACHES["default"]["BACKEND"]
+    assert backend == "django.core.cache.backends.db.DatabaseCache"
+
+
+def test_prod_logging_reaches_the_console(prod_settings):
+    """Errors must land in the container log (Django's default prod config
+    silently drops them: console is debug-only, mail_admins has no ADMINS)."""
+    logging_conf = prod_settings.LOGGING
+    assert "console" in logging_conf["handlers"]
+    assert logging_conf["root"]["handlers"] == ["console"]
+    assert "console" in logging_conf["loggers"]["django"]["handlers"]
+
+
+def test_email_backend_follows_email_host(prod_settings):
+    """No SMTP host configured -> console backend (links readable in the app
+    log) instead of an SMTP backend that errors on every send."""
+    import importlib
+    import os
+
+    old = os.environ.pop("EMAIL_HOST", None)
+    try:
+        mod = importlib.reload(prod_settings)
+        assert mod.EMAIL_BACKEND == "django.core.mail.backends.console.EmailBackend"
+
+        os.environ["EMAIL_HOST"] = "smtp.example.com"
+        mod = importlib.reload(prod_settings)
+        assert mod.EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend"
+        assert mod.EMAIL_HOST == "smtp.example.com"
+    finally:
+        if old is None:
+            os.environ.pop("EMAIL_HOST", None)
+        else:
+            os.environ["EMAIL_HOST"] = old
+        importlib.reload(prod_settings)

@@ -9,6 +9,9 @@ set -e
 echo "Running database migrations..."
 python manage.py migrate --noinput
 
+echo "Ensuring cache table exists (login lockout counters)..."
+python manage.py createcachetable
+
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 

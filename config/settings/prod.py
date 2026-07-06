@@ -20,6 +20,19 @@ ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 # an internal server, e.g. CSRF_TRUSTED_ORIGINS=http://192.168.1.50:8000).
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
+# --- Cache (must be process-shared) -----------------------------------------
+# The login lockout counts failed attempts in the cache. Django's default
+# LocMemCache is per-process, so under multi-worker Gunicorn each worker would
+# keep its own counter and the lockout would be ineffective. The database
+# cache is shared by all workers and needs no extra service; its table is
+# created by `manage.py createcachetable` in the container entrypoint.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",
+    }
+}
+
 # --- Static files: hashed + compressed, served by WhiteNoise ---------------
 STORAGES["staticfiles"]["BACKEND"] = (  # noqa: F405
     "whitenoise.storage.CompressedManifestStaticFilesStorage"
@@ -47,9 +60,38 @@ if ENABLE_HTTPS:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
+# --- Logging -----------------------------------------------------------------
+# Django's default prod logging drops errors (console handler is debug-only and
+# the mail handler has no ADMINS). Send everything to stderr instead so errors
+# and warnings show up in `docker compose logs web`. Tracebacks stay in the
+# server log only — users always get the generic 500 page.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "verbose"},
+    },
+    "root": {"handlers": ["console"], "level": "INFO"},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}
+
 # --- Email -----------------------------------------------------------------
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = env("EMAIL_HOST", default="")
+if EMAIL_HOST:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+else:
+    # No SMTP configured (common on a fresh internal server): print emails to
+    # the app log instead of erroring, so the admin can copy invite/reset
+    # links from `docker compose logs web`.
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")

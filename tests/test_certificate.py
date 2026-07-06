@@ -152,3 +152,76 @@ def test_other_faculty_cannot_download(client, course):
 def test_download_404_when_not_issued(faculty_client, course):
     assert faculty_client.get(reverse("certificate_download", args=[course.pk])).status_code == 404
 
+
+# --- Issuance robustness (transaction + idempotency) ------------------------
+
+@pytest.mark.django_db
+def test_issue_twice_returns_same_certificate(course, admin_user):
+    from review.models import Certificate
+
+    folder = course.folder
+    _make_all_required_available(folder)
+    folder.status = FolderStatus.FINAL_APPROVED
+    folder.save(update_fields=["status"])
+
+    first = certificates.issue_certificate(folder, admin_user)
+    folder.refresh_from_db()
+    second = certificates.issue_certificate(folder, admin_user)
+    assert first.pk == second.pk
+    assert Certificate.objects.filter(folder=folder).count() == 1
+
+
+@pytest.mark.django_db
+def test_retry_repairs_interrupted_issuance(course, admin_user):
+    """Certificate row exists but the folder was never marked certified (a
+    crash between the two writes before the fix). A retry must repair the
+    folder instead of raising IntegrityError on the OneToOne."""
+    from django.core.files.base import ContentFile
+
+    from review.models import Certificate
+
+    folder = course.folder
+    _make_all_required_available(folder)
+    folder.status = FolderStatus.FINAL_APPROVED
+    folder.save(update_fields=["status"])
+
+    orphan = Certificate(folder=folder, issued_by=admin_user)
+    orphan.pdf.save("orphan.pdf", ContentFile(b"%PDF- fake"), save=False)
+    orphan.save()
+
+    cert = certificates.issue_certificate(folder, admin_user)
+    assert cert.pk == orphan.pk
+    folder.refresh_from_db()
+    assert folder.status == FolderStatus.CERTIFIED
+    assert folder.certified_at is not None
+
+
+@pytest.mark.django_db
+def test_failed_issuance_leaves_no_partial_state(course, admin_user, monkeypatch):
+    """If the audit write (last step in the transaction) blows up, neither the
+    certificate row nor the folder status change may survive."""
+    from review.models import Certificate
+
+    folder = course.folder
+    _make_all_required_available(folder)
+    folder.status = FolderStatus.FINAL_APPROVED
+    folder.save(update_fields=["status"])
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("db hiccup")
+
+    monkeypatch.setattr(certificates, "record", _boom)
+    with pytest.raises(RuntimeError):
+        certificates.issue_certificate(folder, admin_user)
+
+    folder.refresh_from_db()
+    assert folder.status == FolderStatus.FINAL_APPROVED
+    assert not Certificate.objects.filter(folder=folder).exists()
+
+    # And a retry after the hiccup succeeds cleanly.
+    monkeypatch.undo()
+    cert = certificates.issue_certificate(folder, admin_user)
+    folder.refresh_from_db()
+    assert folder.status == FolderStatus.CERTIFIED
+    assert Certificate.objects.get(folder=folder) == cert
+

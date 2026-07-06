@@ -14,6 +14,7 @@ from folders.models import CourseFolder, FolderStatus, ItemStatus, Phase
 from folders.services import get_or_create_folder
 
 from . import certificates, services
+from .pdf import PdfRenderError
 
 
 def _require_owner(request, course):
@@ -173,6 +174,12 @@ def certify(request, course_id):
         messages.success(request, "Certificate issued.")
     except certificates.CertificationError as exc:
         messages.error(request, str(exc))
+    except PdfRenderError:
+        messages.error(
+            request,
+            "The certificate PDF could not be generated. Nothing was saved — "
+            "please try again; if it keeps failing, check the server log.",
+        )
     return redirect("review_detail", course_id=course.pk)
 
 

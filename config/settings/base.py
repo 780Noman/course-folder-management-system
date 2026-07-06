@@ -56,8 +56,8 @@ LOGOUT_REDIRECT_URL = "home"
 
 # Login throttling / lockout. Counted per (IP, email) in the cache; after
 # LOGIN_FAILURE_LIMIT failures the pair is locked for LOGIN_LOCKOUT_SECONDS.
-# NOTE: uses Django's default local-memory cache; configure a shared cache
-# (Redis/Memcached) in production so the lockout holds across processes.
+# NOTE: dev uses the default local-memory cache; prod configures a shared
+# DatabaseCache so the counter holds across all Gunicorn workers.
 LOGIN_FAILURE_LIMIT = env.int("LOGIN_FAILURE_LIMIT", default=5)
 LOGIN_LOCKOUT_SECONDS = env.int("LOGIN_LOCKOUT_SECONDS", default=900)
 

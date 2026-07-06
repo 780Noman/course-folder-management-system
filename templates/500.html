@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+{# Standalone on purpose: rendered with an empty context during a server error, so it must not depend on static files, context processors, or anything else that may itself be failing. #}
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Something went wrong — Course Folder Management System</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: flex; align-items: center;
+           justify-content: center; background: #fafaf9; color: #1c1917;
+           font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+    .box { max-width: 28rem; padding: 2rem; text-align: center; }
+    .code { font-size: .8rem; font-weight: 600; letter-spacing: .08em;
+            text-transform: uppercase; color: #166534; }
+    h1 { margin: .5rem 0 0; font-size: 1.75rem; }
+    p { margin: .75rem 0 0; font-size: .9rem; color: #57534e; line-height: 1.5; }
+    a { display: inline-block; margin-top: 2rem; padding: .5rem 1rem;
+        border-radius: .375rem; background: #166534; color: #fff;
+        font-size: .875rem; font-weight: 500; text-decoration: none; }
+    a:hover { background: #14532d; }
+    a:focus-visible { outline: 2px solid #166534; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <p class="code">500</p>
+    <h1>Something went wrong</h1>
+    <p>
+      An unexpected error occurred on the server. It has been logged.
+      Please try again in a moment; if the problem continues, contact the
+      focal person or system administrator.
+    </p>
+    <a href="/">Go to the home page</a>
+  </div>
+</body>
+</html>

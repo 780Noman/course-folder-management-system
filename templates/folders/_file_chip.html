@@ -19,11 +19,10 @@
           hx-target="#item-{{ item.pk }}"
           hx-swap="outerHTML"
           hx-confirm="Delete &ldquo;{{ f.original_name|escapejs }}&rdquo;?"
-          onsubmit="return confirm('Delete “{{ f.original_name|escapejs }}”?');"
           class="mt-1 text-center">
       {% csrf_token %}
       <button type="submit"
-              class="cursor-pointer text-[11px] font-medium text-muted-foreground hover:text-red-700 focus:outline-none">
+              class="cursor-pointer rounded text-xs font-medium text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
         Delete
       </button>
     </form>

@@ -2,15 +2,16 @@
 
 from io import BytesIO
 
+from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
 
 from academics.models import Course, Term
 from accounts.permissions import admin_required
-from review.pdf import render_pdf
+from review.pdf import PdfRenderError, render_pdf
 
 from .services import get_report, summarise
 
@@ -57,7 +58,15 @@ def report_export_pdf(request):
         "reports/report_pdf.html",
         {"rows": rows, "summary": summarise(rows), "generated_at": timezone.now()},
     )
-    pdf = render_pdf(html)
+    try:
+        pdf = render_pdf(html)
+    except PdfRenderError:
+        messages.error(
+            request,
+            "The PDF export could not be generated. Please try again; if it "
+            "keeps failing, check the server log.",
+        )
+        return redirect("report")
     response = HttpResponse(pdf, content_type="application/pdf")
     response["Content-Disposition"] = 'attachment; filename="course-folder-report.pdf"'
     return response

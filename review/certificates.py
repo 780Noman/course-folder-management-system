@@ -1,6 +1,7 @@
 """Certificate eligibility and issuance."""
 
 from django.core.files.base import ContentFile
+from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.text import slugify
@@ -55,8 +56,16 @@ def render_certificate_pdf(folder, issued_by=None, issued_at=None):
 
 def issue_certificate(folder, user):
     """Generate, store, and record the certificate; mark the folder certified."""
-    if folder.status == FolderStatus.CERTIFIED and hasattr(folder, "certificate"):
-        return folder.certificate
+    # Idempotent on the certificate itself (OneToOne), not the folder status:
+    # if an earlier attempt saved the certificate but crashed before marking
+    # the folder, retrying must repair rather than hit an IntegrityError.
+    existing = Certificate.objects.filter(folder=folder).first()
+    if existing:
+        if folder.status != FolderStatus.CERTIFIED:
+            folder.status = FolderStatus.CERTIFIED
+            folder.certified_at = folder.certified_at or existing.issued_at
+            folder.save(update_fields=["status", "certified_at"])
+        return existing
     if folder.status != FolderStatus.FINAL_APPROVED:
         raise CertificationError("Both phases must be approved before certifying.")
     if not can_certify(folder):
@@ -70,11 +79,13 @@ def issue_certificate(folder, user):
     course = folder.course
     filename = f"certificate-{slugify(course.code)}-{slugify(course.section)}.pdf"
     certificate = Certificate(folder=folder, issued_by=user)
-    certificate.pdf.save(filename, ContentFile(pdf_bytes), save=False)
-    certificate.save()
-
-    folder.status = FolderStatus.CERTIFIED
-    folder.certified_at = issued_at
-    folder.save(update_fields=["status", "certified_at"])
-    record(user, "issue_certificate", folder, course=course.id)
+    # All-or-nothing: certificate row, folder status, and audit entry commit
+    # together (the PDF was already rendered above, outside the transaction).
+    with transaction.atomic():
+        certificate.pdf.save(filename, ContentFile(pdf_bytes), save=False)
+        certificate.save()
+        folder.status = FolderStatus.CERTIFIED
+        folder.certified_at = issued_at
+        folder.save(update_fields=["status", "certified_at"])
+        record(user, "issue_certificate", folder, course=course.id)
     return certificate

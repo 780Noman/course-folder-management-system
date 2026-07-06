@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import TemplateView
 
+from accounts.views import admin_login
+
 urlpatterns = [
     path('', TemplateView.as_view(template_name='home.html'), name='home'),
     path('', include('accounts.urls')),
@@ -25,5 +27,8 @@ urlpatterns = [
     path('', include('folders.urls')),
     path('', include('review.urls')),
     path('', include('reports.urls')),
+    # Must precede admin.site.urls: wraps the admin login with the same
+    # (IP, email) lockout as the main login page.
+    path('admin/login/', admin_login),
     path('admin/', admin.site.urls),
 ]

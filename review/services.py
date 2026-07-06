@@ -1,4 +1,4 @@
-"""Folder review lifecycle: submit, approve, return.
+r"""Folder review lifecycle: submit, approve, return.
 
 State machine (strict, linear):
     DRAFT --submit_mid--> MID_SUBMITTED --approve_mid--> MID_APPROVED
@@ -8,6 +8,9 @@ State machine (strict, linear):
 (FINAL_APPROVED --> CERTIFIED is handled at certificate issuance in Phase 7.)
 """
 
+from functools import wraps
+
+from django.db import transaction
 from django.utils import timezone
 
 from audit.services import record
@@ -18,10 +21,29 @@ class TransitionError(Exception):
     """Raised when a lifecycle transition is not allowed in the current state."""
 
 
+def _transition(func):
+    """Run a lifecycle transition atomically on a row-locked folder.
+
+    Re-reads the folder with select_for_update so concurrent transitions
+    (double-click, two tabs) serialize: the second sees the new status and
+    fails its guard instead of applying twice. The caller's instance is
+    refreshed to the committed state afterwards.
+    """
+    @wraps(func)
+    def wrapper(folder, user, **kwargs):
+        with transaction.atomic():
+            locked = CourseFolder.objects.select_for_update().get(pk=folder.pk)
+            result = func(locked, user, **kwargs)
+        folder.refresh_from_db()
+        return result
+    return wrapper
+
+
 def _clear_flags(folder, phases):
     folder.items.filter(phase__in=phases).update(is_flagged=False, review_note="")
 
 
+@_transition
 def submit_mid(folder, user):
     if folder.status != FolderStatus.DRAFT:
         raise TransitionError("The mid-term phase is not in a submittable state.")
@@ -37,6 +59,7 @@ def submit_mid(folder, user):
     record(user, "submit_mid", folder, course=folder.course_id)
 
 
+@_transition
 def submit_final(folder, user):
     if folder.status != FolderStatus.MID_APPROVED:
         raise TransitionError(
@@ -54,6 +77,7 @@ def submit_final(folder, user):
     record(user, "submit_final", folder, course=folder.course_id)
 
 
+@_transition
 def approve_mid(folder, user):
     if folder.status != FolderStatus.MID_SUBMITTED:
         raise TransitionError("The mid-term phase is not awaiting review.")
@@ -65,6 +89,7 @@ def approve_mid(folder, user):
     record(user, "approve_mid", folder, course=folder.course_id)
 
 
+@_transition
 def approve_final(folder, user):
     if folder.status != FolderStatus.FINAL_SUBMITTED:
         raise TransitionError("The final-term phase is not awaiting review.")
@@ -91,6 +116,7 @@ def _apply_return(folder, phases, overall_note, flagged_notes):
             item.save(update_fields=["is_flagged", "review_note"])
 
 
+@_transition
 def return_mid(folder, user, overall_note="", flagged_notes=None):
     if folder.status != FolderStatus.MID_SUBMITTED:
         raise TransitionError("The mid-term phase is not awaiting review.")
@@ -102,6 +128,7 @@ def return_mid(folder, user, overall_note="", flagged_notes=None):
            flagged=list(flagged_notes or {}))
 
 
+@_transition
 def return_final(folder, user, overall_note="", flagged_notes=None):
     if folder.status != FolderStatus.FINAL_SUBMITTED:
         raise TransitionError("The final-term phase is not awaiting review.")
