@@ -6,6 +6,7 @@ from . import views
 
 urlpatterns = [
     path("courses/<int:course_id>/folder/", views.folder_detail, name="folder_detail"),
+    path("courses/<int:course_id>/folder/status/", views.folder_status, name="folder_status"),
     path("courses/<int:course_id>/folder/items/add/", views.item_add, name="item_add"),
     path("folder/items/<int:item_id>/remove/", views.item_remove, name="item_remove"),
     path("folder/items/<int:item_id>/na/", views.item_mark_na, name="item_mark_na"),

@@ -59,6 +59,34 @@ def test_remove_allowed_for_count_variable_item(faculty_client, course):
 
 
 @pytest.mark.django_db
+def test_remove_item_deletes_its_files_from_storage(
+    faculty_client, course, settings, tmp_path
+):
+    """Removing an item with uploads must delete the physical files too —
+    otherwise they are orphaned on the server disk forever."""
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from folders.models import ItemFile
+    from folders.services import save_item_file
+
+    settings.MEDIA_ROOT = str(tmp_path)
+    assignment4 = course.folder.items.get(order=18)  # removable, allows samples
+
+    upload = SimpleUploadedFile(
+        "worst.pdf", b"%PDF-1.4 fake", content_type="application/pdf"
+    )
+    item_file = save_item_file(assignment4, upload, course.instructor)
+    storage, stored_name = item_file.file.storage, item_file.file.name
+    assert storage.exists(stored_name)
+
+    resp = faculty_client.post(reverse("item_remove", args=[assignment4.pk]))
+    assert resp.status_code == 302
+    assert not ChecklistItem.objects.filter(pk=assignment4.pk).exists()
+    assert not ItemFile.objects.filter(pk=item_file.pk).exists()
+    assert not storage.exists(stored_name)  # storage object gone, not orphaned
+
+
+@pytest.mark.django_db
 def test_core_required_item_cannot_be_removed(faculty_client, course):
     calendar = course.folder.items.get(order=1)  # Academic Calendar, core
     resp = faculty_client.post(reverse("item_remove", args=[calendar.pk]), follow=True)

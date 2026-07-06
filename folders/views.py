@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Max
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -23,6 +23,7 @@ from .models import (
     SampleKind,
 )
 from .services import (
+    delete_item,
     delete_item_file,
     get_or_create_folder,
     recompute_item_status,
@@ -60,7 +61,7 @@ _PHASE_LABELS = {Phase.GENERAL: "General", Phase.MID: "Mid-term", Phase.FINAL: "
 
 def _item_update(request, folder, phase, item=None, **row_ctx):
     """HTMX response: the item row (or nothing, if removed) plus out-of-band
-    refreshes of the overall and that phase's section progress bars."""
+    refreshes of the progress bars and the action panel (submit readiness)."""
     items = list(folder.items.all())
     context = {
         "item": item,
@@ -68,6 +69,12 @@ def _item_update(request, folder, phase, item=None, **row_ctx):
         "phase": phase,
         "phase_label": _PHASE_LABELS.get(phase, ""),
         "section_prog": CourseFolder.progress([i for i in items if i.phase == phase]),
+        # For the out-of-band action panel: item actions are owner-only, so
+        # the requester is always the instructor here.
+        "course": folder.course,
+        "folder": folder,
+        "mid_ready": folder.is_phase_complete(CourseFolder.MID_PHASES),
+        "final_ready": folder.is_phase_complete(CourseFolder.FINAL_PHASES),
     }
     context.update(row_ctx)
     return render(request, "folders/_item_update.html", context)
@@ -114,6 +121,25 @@ def folder_detail(request, course_id):
             "final_ready": folder.is_phase_complete(CourseFolder.FINAL_PHASES),
         },
     )
+
+
+@login_required
+def folder_status(request, course_id):
+    """Lightweight poll target for the folder page.
+
+    The action panel polls this with the status it was rendered with; when the
+    focal person has since approved/returned/certified, we answer with
+    HX-Refresh so the open page reloads itself and shows the change (return
+    notes, flags, certificate button) without a manual refresh. Otherwise 204.
+    """
+    course = get_object_or_404(Course, pk=course_id)
+    _require_folder_access(request, course)
+    folder = get_or_create_folder(course)
+    if request.GET.get("status") != folder.status:
+        response = HttpResponse(status=200)
+        response["HX-Refresh"] = "true"
+        return response
+    return HttpResponse(status=204)
 
 
 def _next_family_number(folder, prefix):
@@ -187,7 +213,7 @@ def item_remove(request, item_id):
         return redirect("folder_detail", course_id=course.pk)
 
     folder, phase, title = item.folder, item.phase, item.title
-    item.delete()
+    delete_item(item)  # also removes any uploaded files from storage
     record(request.user, "item_remove", course, title=title)
     # HTMX: no row (it is removed) + out-of-band progress refresh.
     if request.htmx:

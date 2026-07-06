@@ -1,4 +1,4 @@
-{# HTMX item-action response: optional row + out-of-band overall/section progress. #}
+{# HTMX item-action response: optional row + out-of-band overall/section progress + action panel (so the submit button enables/disables without a page refresh). #}
 {% if item %}{% include "folders/_item_row.html" %}{% endif %}
 <div id="overall-progress" hx-swap-oob="true">
   {% include "folders/_progress_overall.html" with prog=overall %}
@@ -6,3 +6,4 @@
 <div id="progress-{{ phase }}" hx-swap-oob="true">
   {% include "folders/_progress_section.html" with label=phase_label prog=section_prog %}
 </div>
+{% include "folders/_folder_actions.html" with oob=True %}

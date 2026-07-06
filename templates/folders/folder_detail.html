@@ -26,64 +26,7 @@
   </div>
 
   {% if is_owner %}
-    <div class="mt-4 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-      {% if folder.status == 'DRAFT' %}
-        {% if folder.mid_return_note %}
-          <div class="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            <p class="font-medium">Returned for revision (mid-term):</p>
-            <p class="mt-1 whitespace-pre-line">{{ folder.mid_return_note }}</p>
-          </div>
-        {% endif %}
-        <div class="flex flex-wrap items-center gap-3">
-          <form method="post" action="{% url 'submit_mid' course.pk %}">
-            {% csrf_token %}
-            <button type="submit" {% if not mid_ready %}disabled{% endif %}
-                    class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
-                    {% if mid_ready %}cursor-pointer hover:bg-primary-strong{% else %}cursor-not-allowed opacity-50{% endif %}">
-              Submit mid-term for review
-            </button>
-          </form>
-          {% if not mid_ready %}
-            <p class="text-sm text-gray-500">Complete every required General and Mid-term item to submit.</p>
-          {% endif %}
-        </div>
-      {% elif folder.status == 'MID_SUBMITTED' %}
-        <p class="text-sm text-gray-700">Mid-term submitted — awaiting the focal person's review.</p>
-      {% elif folder.status == 'MID_APPROVED' %}
-        <p class="mb-3 text-sm font-medium text-green-700">Mid-term approved.</p>
-        {% if folder.final_return_note %}
-          <div class="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            <p class="font-medium">Returned for revision (final-term):</p>
-            <p class="mt-1 whitespace-pre-line">{{ folder.final_return_note }}</p>
-          </div>
-        {% endif %}
-        <div class="flex flex-wrap items-center gap-3">
-          <form method="post" action="{% url 'submit_final' course.pk %}">
-            {% csrf_token %}
-            <button type="submit" {% if not final_ready %}disabled{% endif %}
-                    class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
-                    {% if final_ready %}cursor-pointer hover:bg-primary-strong{% else %}cursor-not-allowed opacity-50{% endif %}">
-              Submit final-term for review
-            </button>
-          </form>
-          {% if not final_ready %}
-            <p class="text-sm text-gray-500">Complete every required Final-term item to submit.</p>
-          {% endif %}
-        </div>
-      {% elif folder.status == 'FINAL_SUBMITTED' %}
-        <p class="text-sm text-gray-700">Final-term submitted — awaiting the focal person's review.</p>
-      {% elif folder.status == 'FINAL_APPROVED' %}
-        <p class="text-sm font-medium text-green-700">Both phases approved — awaiting certificate issuance.</p>
-      {% elif folder.status == 'CERTIFIED' %}
-        <div class="flex flex-wrap items-center gap-3">
-          <p class="text-sm font-medium text-green-700">This course folder is certified.</p>
-          <a href="{% url 'certificate_download' course.pk %}"
-             class="cursor-pointer rounded-md border border-green-300 bg-white px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2">
-            Download certificate
-          </a>
-        </div>
-      {% endif %}
-    </div>
+    {% include "folders/_folder_actions.html" %}
   {% endif %}
 
   {% for section in sections %}

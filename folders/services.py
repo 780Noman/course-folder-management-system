@@ -108,6 +108,20 @@ def generate_thumbnail(item_file):
     return item_file.thumbnail
 
 
+def delete_item(item):
+    """Remove a checklist item together with its files' storage objects.
+
+    item.delete() cascades the ItemFile rows, but the physical files (and
+    thumbnails) live in storage and must be deleted explicitly — otherwise
+    they are orphaned on disk/S3 forever.
+    """
+    for item_file in item.files.all():
+        item_file.file.delete(save=False)
+        if item_file.thumbnail:
+            item_file.thumbnail.delete(save=False)
+    item.delete()
+
+
 def delete_item_file(item_file, user=None):
     """Delete a file (and its thumbnail) from storage and the database, and
     reset the item to pending if it has no files left."""
