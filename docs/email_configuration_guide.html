@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 1.7cm; }
+  body { font-family: "Helvetica", "Arial", sans-serif; color: #1C1917; font-size: 10.5px; line-height: 1.5; }
+  .cover { border-bottom: 3px solid #166534; padding-bottom: 10px; margin-bottom: 14px; }
+  h1 { color: #166534; font-size: 19px; margin: 0 0 4px; }
+  .sub { color: #57534E; font-size: 11px; }
+  .by { margin-top: 8px; font-size: 11px; }
+  h2 { color: #14532D; font-size: 13px; margin: 16px 0 5px; border-bottom: 1px solid #E0DDD3; padding-bottom: 3px; }
+  h3 { color: #166534; font-size: 11.5px; margin: 11px 0 3px; }
+  p { margin: 4px 0; }
+  ol, ul { margin: 3px 0 7px 17px; }
+  li { margin: 3px 0; }
+  code { background: #EFEDE6; padding: 0 3px; font-family: "Courier New", monospace; }
+  pre { background: #F3F2EE; border: 1px solid #E0DDD3; padding: 7px 9px; font-family: "Courier New", monospace;
+        font-size: 9.5px; white-space: pre-wrap; word-wrap: break-word; margin: 5px 0; }
+  .note { background: #F7F6F2; border: 1px solid #E0DDD3; padding: 6px 8px; margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+  th, td { border: 1px solid #A8A29E; padding: 4px 6px; font-size: 9.5px; text-align: left; vertical-align: top; }
+  th { background: #EFEDE6; }
+  .warn { background: #FEF2F2; border: 1px solid #FCA5A5; padding: 6px 8px; margin: 6px 0; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>Course Folder Management System</h1>
+  <div class="sub">Email (SMTP) Configuration Guide - invitations and password resets</div>
+  <div class="sub">University Institute of Information Technology (UIIT), PMAS Arid Agriculture University, Rawalpindi</div>
+  <div class="by"><strong>Prepared by: Noman Amjad</strong></div>
+</div>
+
+<p>The system sends email in exactly two situations: (1) when the focal person
+<strong>invites a faculty member</strong> (the email contains a one-time link where
+the person sets their own password), and (2) when someone uses
+<strong>Forgot password</strong>. No other email is ever sent, so the volume is very
+small - a few messages per semester.</p>
+
+<h2>1. How it works without any configuration</h2>
+<p>If you deploy the system without filling in the email settings, it does not
+break. Instead of sending, the full email (including the invite link) is printed to
+the application log. To read it on the server:</p>
+<pre>docker compose -f docker-compose.prod.yml logs web | tail -40</pre>
+<p>Copy the link that starts with <code>http://...:8000/invite/</code> and give it to the
+faculty member (for example over WhatsApp or in person). This works fine, but real
+email is more convenient - pick one of the three options below.</p>
+
+<h2>2. The settings the application reads</h2>
+<p>All email configuration goes into the <code>.env</code> file on the server (the same
+file created during deployment). These are the lines that matter:</p>
+<pre>EMAIL_HOST=            # SMTP server name, e.g. smtp.gmail.com
+EMAIL_PORT=587         # leave 587 unless told otherwise
+EMAIL_HOST_USER=       # the SMTP login (usually an email address)
+EMAIL_HOST_PASSWORD=   # the SMTP password / app password / key
+EMAIL_USE_TLS=True     # leave True
+DEFAULT_FROM_EMAIL=Course Folder System &lt;no-reply@uiit.edu.pk&gt;</pre>
+<p>After editing <code>.env</code>, apply the change by recreating the web container:</p>
+<pre>docker compose -f docker-compose.prod.yml up -d --force-recreate web</pre>
+
+<h2>3. Option A - university mail server (preferred if available)</h2>
+<p>If UIIT / PMAS-AAUR has its own mail server, this is the cleanest option because
+emails come from a real <code>uiit.edu.pk</code> address and are trusted by recipients.</p>
+<ol>
+  <li>Ask the university IT / network section for: the SMTP server name, the port
+      (usually 587), and a mailbox the system may send from (for example
+      <code>no-reply@uiit.edu.pk</code> or the focal person's mailbox) with its password.</li>
+  <li>Fill the values into <code>.env</code>:
+<pre>EMAIL_HOST=mail.uaar.edu.pk        # whatever IT gives you
+EMAIL_PORT=587
+EMAIL_HOST_USER=no-reply@uiit.edu.pk
+EMAIL_HOST_PASSWORD=the-mailbox-password
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=Course Folder System &lt;no-reply@uiit.edu.pk&gt;</pre></li>
+  <li>Recreate the container (command in section 2) and send a test invite.</li>
+</ol>
+
+<h2>4. Option B - a Gmail account with an App Password (quickest)</h2>
+<p>Any Gmail account can send the system's mail. Google no longer allows your normal
+account password over SMTP - you must create a 16-character <strong>App Password</strong>,
+and that requires <strong>2-Step Verification</strong> to be turned on first.</p>
+<h3>4.1 Create the App Password (in a browser, once)</h3>
+<ol>
+  <li>Sign in to the Gmail account you want to send from (a dedicated account such
+      as <code>uiit.coursefolders@gmail.com</code> is tidier than a personal one).</li>
+  <li>Go to <code>myaccount.google.com/security</code> and turn on
+      <strong>2-Step Verification</strong> (phone number confirmation).</li>
+  <li>Go to <code>myaccount.google.com/apppasswords</code>, enter a name such as
+      "Course Folder System", and press Create.</li>
+  <li>Google shows a 16-character password once. Copy it (spaces do not matter -
+      remove them).</li>
+</ol>
+<h3>4.2 Put it in .env</h3>
+<pre>EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=uiit.coursefolders@gmail.com
+EMAIL_HOST_PASSWORD=abcdefghijklmnop     # the 16-character app password
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=Course Folder System &lt;uiit.coursefolders@gmail.com&gt;</pre>
+<div class="note"><strong>Note:</strong> with Gmail, <code>DEFAULT_FROM_EMAIL</code> must use the
+same Gmail address you log in with - Gmail rewrites the sender otherwise. Free Gmail
+allows roughly 500 recipients per day, far more than this system ever needs.</div>
+
+<h2>5. Option C - Brevo free tier (no personal account involved)</h2>
+<p>Brevo (formerly Sendinblue) has a free plan with <strong>300 emails per day</strong>,
+which is more than enough. It does not require a domain of your own for basic use,
+but each sender address must be verified.</p>
+<ol>
+  <li>Create a free account at <code>brevo.com</code> and confirm your email.</li>
+  <li>In the dashboard, add and verify a <strong>sender</strong>: Senders &amp; IP - Senders -
+      Add a sender. Brevo emails a 6-digit code to that address; enter it. Use an
+      address you can actually receive mail on (the focal person's email works).</li>
+  <li>Go to the <strong>SMTP &amp; API</strong> page and press
+      <strong>Generate a new SMTP key</strong>. Copy the <em>login</em> shown there and the
+      <em>key</em> (the key is shown only once - save it). Make sure it is an SMTP key,
+      not an API key.</li>
+  <li>Fill <code>.env</code>:
+<pre>EMAIL_HOST=smtp-relay.brevo.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=the-smtp-login-shown-by-brevo
+EMAIL_HOST_PASSWORD=the-smtp-key
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=Course Folder System &lt;the-verified-sender-address&gt;</pre></li>
+</ol>
+<div class="warn"><strong>Important:</strong> <code>DEFAULT_FROM_EMAIL</code> must be one of the
+senders you verified in step 2, or Brevo silently drops / rejects the message.</div>
+
+<h2>6. Test it end to end</h2>
+<ol>
+  <li>Apply the settings: <code>docker compose -f docker-compose.prod.yml up -d --force-recreate web</code></li>
+  <li>Quick check from the server (sends a real test message):
+<pre>docker compose -f docker-compose.prod.yml exec web \
+  python manage.py shell -c "from django.core.mail import send_mail; \
+send_mail('Test - Course Folder System', 'Email works.', None, ['YOUR-OWN-EMAIL'])"</pre>
+      If this prints <code>1</code> and the message arrives (check spam too), email works.</li>
+  <li>Real check: log in as the focal person, invite a faculty member with a real
+      address, and confirm the invitation arrives and the link opens the
+      set-password page.</li>
+</ol>
+
+<h2>7. Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Likely cause and fix</th></tr>
+  <tr><td>"The invitation email could not be sent" message in the app</td>
+      <td>Wrong host, port, username, or password in <code>.env</code>. The account was NOT
+      created, so after fixing the settings simply invite again. Details are in
+      <code>docker compose -f docker-compose.prod.yml logs web</code>.</td></tr>
+  <tr><td>Authentication error with Gmail</td>
+      <td>You used the normal account password. Only a 16-character App Password
+      works, and 2-Step Verification must be on.</td></tr>
+  <tr><td>Connection timeout</td>
+      <td>The university network/firewall may block outgoing port 587. Ask IT to
+      allow it from the server, or use the university mail server (Option A).</td></tr>
+  <tr><td>Message never arrives</td>
+      <td>Check the recipient's spam folder first. With Brevo, confirm the sender
+      address is verified and matches <code>DEFAULT_FROM_EMAIL</code>.</td></tr>
+  <tr><td>No email settings at all</td>
+      <td>Not an error - invite links are printed to the log (section 1).</td></tr>
+</table>
+
+<h2>8. Which option should you pick?</h2>
+<table>
+  <tr><th>Option</th><th>Best when</th><th>Cost</th><th>Effort</th></tr>
+  <tr><td>A - University SMTP</td><td>IT can give you a mailbox; most professional sender address</td><td>Free</td><td>One email to IT</td></tr>
+  <tr><td>B - Gmail App Password</td><td>You want it working today with zero approvals</td><td>Free</td><td>10 minutes</td></tr>
+  <tr><td>C - Brevo free tier</td><td>You prefer a neutral service and delivery statistics</td><td>Free (300/day)</td><td>15 minutes</td></tr>
+</table>
+<p>Recommendation: start with <strong>Option B (Gmail)</strong> so invitations work
+immediately, and switch to <strong>Option A</strong> when the university mailbox is
+arranged - it is only a four-line change in <code>.env</code>.</p>
+
+</body>
+</html>
