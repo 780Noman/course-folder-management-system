@@ -54,15 +54,21 @@
                 <span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Inactive</span>
               {% endif %}
             </td>
-            <td class="px-4 py-3 text-right">
-              <form method="post" action="{% url 'faculty_set_active' member.pk %}">
-                {% csrf_token %}
-                <button type="submit"
-                        class="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
-                        {% if member.is_active %}border-red-200 bg-white text-red-700 hover:bg-red-50{% else %}border-gray-300 bg-white text-gray-700 hover:bg-gray-50{% endif %}">
-                  {% if member.is_active %}Deactivate{% else %}Reactivate{% endif %}
-                </button>
-              </form>
+            <td class="px-4 py-3">
+              <div class="flex items-center justify-end gap-2">
+                <a href="{% url 'faculty_set_password' member.pk %}"
+                   class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                  Reset password
+                </a>
+                <form method="post" action="{% url 'faculty_set_active' member.pk %}">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
+                          {% if member.is_active %}border-red-200 bg-white text-red-700 hover:bg-red-50{% else %}border-gray-300 bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                    {% if member.is_active %}Deactivate{% else %}Reactivate{% endif %}
+                  </button>
+                </form>
+              </div>
             </td>
           </tr>
         {% empty %}

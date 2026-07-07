@@ -1,8 +1,5 @@
 """Authentication and dashboard views."""
 
-import logging
-import smtplib
-
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -16,12 +13,9 @@ from django.views.decorators.http import require_POST
 from audit.services import record
 
 from . import ratelimit
-from .emails import send_invite_email
-from .forms import InviteForm
+from .forms import InviteForm, SetUserPasswordForm
 from .models import User
 from .permissions import admin_required, faculty_required
-
-logger = logging.getLogger(__name__)
 
 
 class RoleLoginView(LoginView):
@@ -88,48 +82,63 @@ def admin_login(request, extra_context=None):
 
 @admin_required
 def invite_user(request):
-    """Admin invites a user by name + email; a one-time set-password link is sent."""
+    """Admin creates a user with an initial password (offline: no email sent).
+
+    The admin shares the password with the user, who can change it afterwards
+    from their account. The raw password is never logged.
+    """
     if request.method == "POST":
         form = InviteForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            # No usable password until the invitee sets one via the emailed link.
-            user.set_unusable_password()
-            try:
-                # Atomic: if the email cannot be sent, the account is rolled
-                # back so the admin can simply retry (no orphaned user row that
-                # would block re-inviting the same address).
-                with transaction.atomic():
-                    user.save()
-                    send_invite_email(user, request)
-                    record(
-                        request.user, "user_invite", user,
-                        email=user.email, role=user.role,
-                    )
-            except (smtplib.SMTPException, OSError):
-                logger.exception(
-                    "Invite email to %s failed; account creation rolled back.",
-                    user.email,
+            user.set_password(form.cleaned_data["password"])
+            with transaction.atomic():
+                user.save()
+                record(
+                    request.user, "user_invite", user,
+                    email=user.email, role=user.role,
                 )
-                messages.error(
-                    request,
-                    "The invitation email could not be sent, so the account "
-                    "was not created. Check the email (SMTP) settings and "
-                    "try again.",
-                )
-                return render(request, "accounts/invite_form.html", {"form": form})
             messages.success(
-                request, f"Invitation sent to {user.email}."
+                request,
+                f"Account created for {user.name} ({user.email}). "
+                "Share the password you set; they can change it after signing in.",
             )
-            return redirect("invite_user")
+            return redirect("faculty_list")
     else:
         form = InviteForm()
     return render(request, "accounts/invite_form.html", {"form": form})
 
 
+@admin_required
+def faculty_set_password(request, pk):
+    """Admin sets/resets a user's password (offline password recovery)."""
+    member = get_object_or_404(User, pk=pk)
+    if request.method == "POST":
+        form = SetUserPasswordForm(request.POST, user=member)
+        if form.is_valid():
+            with transaction.atomic():
+                member.set_password(form.cleaned_data["password"])
+                member.save(update_fields=["password"])
+                record(request.user, "user_set_password", member, email=member.email)
+            messages.success(
+                request,
+                f"Password reset for {member.name} ({member.email}). "
+                "Share it; they can change it after signing in.",
+            )
+            return redirect("faculty_list")
+    else:
+        form = SetUserPasswordForm(user=member)
+    return render(
+        request,
+        "accounts/set_faculty_password.html",
+        {"form": form, "member": member},
+    )
+
+
 class InviteSetPasswordView(PasswordResetConfirmView):
-    """The invited user sets their own password via the one-time link, then is
-    logged in. Reuses Django's token validation (single-use + expiring)."""
+    """The invited user sets their own password via a one-time link, then is
+    logged in. Reuses Django's token validation (single-use + expiring). Kept
+    for the online/email path; the offline flow uses admin-set passwords."""
 
     template_name = "accounts/set_password.html"
     post_reset_login = True

@@ -65,6 +65,11 @@ urlpatterns = [
         views.faculty_set_active,
         name="faculty_set_active",
     ),
+    path(
+        "manage/faculty/<int:pk>/set-password/",
+        views.faculty_set_password,
+        name="faculty_set_password",
+    ),
     path("manage/users/invite/", views.invite_user, name="invite_user"),
     path(
         "invite/<uidb64>/<token>/",

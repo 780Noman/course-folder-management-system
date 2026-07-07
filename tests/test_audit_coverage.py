@@ -13,10 +13,16 @@ def term(db):
 
 
 @pytest.mark.django_db
-def test_user_invite_audited(admin_client, settings):
-    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
-    admin_client.post(reverse("invite_user"),
-                      {"name": "New", "email": "new@uiit.edu.pk", "role": "FACULTY"})
+def test_user_invite_audited(admin_client):
+    admin_client.post(
+        reverse("invite_user"),
+        {
+            "name": "New",
+            "email": "new@uiit.edu.pk",
+            "role": "FACULTY",
+            "password": "StartPass123!",
+        },
+    )
     assert AuditLog.objects.filter(action="user_invite").exists()
 
 
