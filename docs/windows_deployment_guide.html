@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 1.7cm; }
+  body { font-family: "Helvetica", "Arial", sans-serif; color: #1C1917; font-size: 10.5px; line-height: 1.5; }
+  .cover { border-bottom: 3px solid #166534; padding-bottom: 10px; margin-bottom: 14px; }
+  h1 { color: #166534; font-size: 19px; margin: 0 0 4px; }
+  .sub { color: #57534E; font-size: 11px; }
+  .by { margin-top: 8px; font-size: 11px; }
+  h2 { color: #14532D; font-size: 13px; margin: 15px 0 5px; border-bottom: 1px solid #E0DDD3; padding-bottom: 3px; }
+  h3 { color: #166534; font-size: 11.5px; margin: 10px 0 3px; }
+  p { margin: 4px 0; }
+  ol, ul { margin: 3px 0 7px 17px; }
+  li { margin: 3px 0; }
+  code { background: #EFEDE6; padding: 0 3px; font-family: "Courier New", monospace; }
+  pre { background: #F3F2EE; border: 1px solid #E0DDD3; padding: 7px 9px; font-family: "Courier New", monospace;
+        font-size: 9.3px; white-space: pre-wrap; word-wrap: break-word; margin: 5px 0; }
+  .note { background: #F7F6F2; border: 1px solid #E0DDD3; padding: 6px 8px; margin: 6px 0; }
+  .alt { background: #F0F6F1; border-left: 3px solid #166534; padding: 5px 8px; margin: 5px 0; }
+  .warn { background: #FEF2F2; border: 1px solid #FCA5A5; padding: 6px 8px; margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+  th, td { border: 1px solid #A8A29E; padding: 4px 6px; font-size: 9.3px; text-align: left; vertical-align: top; }
+  th { background: #EFEDE6; }
+  .does { color: #57534E; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>Course Folder Management System</h1>
+  <div class="sub">Complete Windows 10 Deployment Guide - fresh machine, end to end, copy &amp; paste (PowerShell)</div>
+  <div class="sub">University Institute of Information Technology (UIIT), PMAS Arid Agriculture University, Rawalpindi</div>
+  <div class="by"><strong>Prepared by: Noman Amjad</strong></div>
+</div>
+
+<p>This is the single, complete guide for putting the Course Folder Management
+System onto a <strong>brand-new Windows 10 computer</strong> that will act as the
+server on the university's local network. It is written for a
+<strong>non-technical team</strong>: every step says what it does, gives the exact
+command to copy and paste, and lists an alternative in case the first way does not
+work. Do the sections <strong>in order, top to bottom</strong>. Do not skip any.</p>
+
+<div class="warn">
+  <strong>Very important - internet is needed only while setting up.</strong>
+  Installing the tools and building the app downloads about 500 MB from the
+  internet. So the server <strong>must be connected to the internet during setup</strong>.
+  <strong>After</strong> the first successful build, the app runs completely on the
+  local network and never needs the internet again. So: connect to the internet,
+  finish this guide, then the machine can be moved to the offline LAN.
+</div>
+
+<div class="note">
+  <strong>Before you begin, make sure you have:</strong> a Windows 10 (64-bit) PC you
+  can log in to as an <strong>Administrator</strong>; 8 GB RAM or more (this machine has
+  32 GB); an internet connection for now; and about 45-60 minutes. You do
+  <strong>not</strong> need any programming knowledge - just follow along.
+</div>
+
+<h2>Step 1 - Open PowerShell as Administrator</h2>
+<p class="does">What this does: opens the command window with the permissions needed to install software.</p>
+<ol>
+  <li>Click <strong>Start</strong> and type <code>powershell</code>.</li>
+  <li>Right-click <strong>Windows PowerShell</strong> -&gt; <strong>Run as administrator</strong> -&gt; <strong>Yes</strong>.</li>
+  <li>The title bar must read <em>Administrator: Windows PowerShell</em>. Keep this
+      window open for the whole guide.</li>
+</ol>
+<p>Check the machine is 64-bit (must print <code>True</code>):</p>
+<pre>[System.Environment]::Is64BitOperatingSystem</pre>
+
+<h2>Step 2 - Turn on virtualization</h2>
+<p class="does">What this does: lets Docker run its small Linux engine. Usually already on.</p>
+<ol>
+  <li>Press <code>Ctrl+Shift+Esc</code> -&gt; <strong>Performance</strong> tab -&gt; <strong>CPU</strong>.</li>
+  <li>Find <strong>Virtualization</strong>. If it says <strong>Enabled</strong>, go to Step 3.</li>
+  <li>If <strong>Disabled</strong>: restart, open BIOS/UEFI (tap <code>Del</code>, <code>F2</code>,
+      or <code>F10</code> at power-on), turn on <strong>Virtualization Technology</strong>
+      (Intel VT-x / AMD SVM), save, and reboot.</li>
+</ol>
+
+<h2>Step 3 - Install WSL 2 (Docker's engine)</h2>
+<p class="does">What this does: installs the Linux layer Docker needs.</p>
+<pre>wsl --install</pre>
+<p>When it finishes, <strong>restart the computer</strong>. After the restart, open
+Administrator PowerShell again and run:</p>
+<pre>wsl --set-default-version 2</pre>
+<div class="alt"><strong>Alternative</strong> if <code>wsl --install</code> says "not
+recognized": turn the features on manually, then reboot and retry:
+<pre>dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart</pre></div>
+
+<h2>Step 4 - Install Docker Desktop</h2>
+<p class="does">What this does: installs the program that builds and runs the whole system. Download it using the FIRST option that works.</p>
+
+<h3>4.1 Download the installer</h3>
+<p><strong>Option A - curl (built into Windows 10, most reliable):</strong></p>
+<pre>curl.exe -L "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe" -o "$env:USERPROFILE\Downloads\DockerInstaller.exe"</pre>
+<div class="alt"><strong>Option B - PowerShell download:</strong>
+<pre>$ProgressPreference = 'SilentlyContinue'
+Invoke-WebRequest -Uri "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe" -OutFile "$env:USERPROFILE\Downloads\DockerInstaller.exe"</pre>
+<strong>Option C - BITS transfer (good for large files):</strong>
+<pre>Start-BitsTransfer -Source "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe" -Destination "$env:USERPROFILE\Downloads\DockerInstaller.exe"</pre>
+<strong>Option D - winget (if available; downloads AND installs, then skip 4.2):</strong>
+<pre>winget install -e --id Docker.DockerDesktop</pre>
+<strong>Option E - just use a browser:</strong> open
+<code>https://www.docker.com/products/docker-desktop/</code> and click
+<strong>Download for Windows</strong>. The file lands in your Downloads folder.</div>
+
+<h3>4.2 Run the installer</h3>
+<pre>Start-Process "$env:USERPROFILE\Downloads\DockerInstaller.exe" -Wait</pre>
+<p>Keep <strong>Use WSL 2</strong> ticked, finish, and <strong>restart if asked</strong>.</p>
+<div class="alt"><strong>Alternative - silent install (no clicking):</strong>
+<pre>Start-Process "$env:USERPROFILE\Downloads\DockerInstaller.exe" -Wait -ArgumentList "install","--quiet","--accept-license"</pre></div>
+
+<h3>4.3 Start Docker and make it auto-run</h3>
+<ol>
+  <li>Open <strong>Docker Desktop</strong> from Start. Accept the terms.</li>
+  <li>Wait until it says <strong>Engine running</strong> (the whale icon in the tray is steady).</li>
+  <li>Open <strong>Settings (gear)</strong> -&gt; <strong>General</strong> -&gt; tick
+      <strong>Start Docker Desktop when you sign in</strong> (so the server restarts
+      by itself after a power cut).</li>
+</ol>
+
+<h3>4.4 Check Docker works</h3>
+<pre>docker --version
+docker compose version
+docker run hello-world</pre>
+<p>The last command should print <em>"Hello from Docker!"</em>. If it does, Docker is ready.</p>
+
+<h2>Step 5 - Download the application code</h2>
+<p class="does">What this does: puts the project files on the server. Use ONE option.</p>
+<p><strong>Option A - download the ZIP (simplest, no extra tools):</strong></p>
+<pre>curl.exe -L "https://github.com/780Noman/course-folder-management-system/archive/refs/heads/main.zip" -o "$env:USERPROFILE\Downloads\app.zip"
+Expand-Archive "$env:USERPROFILE\Downloads\app.zip" -DestinationPath "C:\" -Force
+Rename-Item "C:\course-folder-management-system-main" "C:\course-folder"</pre>
+<div class="alt"><strong>Option B - with Git</strong> (the repository is public, so no login is needed):
+<pre>winget install -e --id Git.Git
+cd C:\
+git clone https://github.com/780Noman/course-folder-management-system.git course-folder</pre>
+<strong>Option C - from a USB drive:</strong> copy the project folder to
+<code>C:\course-folder</code> (you do not need the <code>.venv</code> folder or any
+video files).</div>
+<p>Now move into the folder. <strong>Every command after this runs from here:</strong></p>
+<pre>cd C:\course-folder</pre>
+
+<h2>Step 6 - Create the settings file (.env)</h2>
+<p class="does">What this does: writes the server's settings (a secret key, a database
+password, and this machine's network address). The command below makes them for you
+automatically - you only type the IP address.</p>
+
+<h3>6.1 Find this machine's IP address</h3>
+<pre>ipconfig</pre>
+<p>Under your active network adapter, read the <strong>IPv4 Address</strong>, for
+example <code>192.168.1.50</code>. Keep it handy for the next command.</p>
+
+<h3>6.2 Create the .env file automatically</h3>
+<p>Copy and paste this whole block. It will ask for the IP address, generate a strong
+secret key and database password, and write the file:</p>
+<pre>$ip = Read-Host "Enter this server's IPv4 address (example 192.168.1.50)"
+$secret = -join ((48..57)+(65..90)+(97..122) | Get-Random -Count 50 | ForEach-Object {[char]$_})
+$dbpass = -join ((48..57)+(65..90)+(97..122) | Get-Random -Count 24 | ForEach-Object {[char]$_})
+@"
+DJANGO_SETTINGS_MODULE=config.settings.prod
+SECRET_KEY=$secret
+DEBUG=False
+ALLOWED_HOSTS=$ip
+DATABASE_URL=postgres://postgres:$dbpass@db:5432/coursefolders
+POSTGRES_DB=coursefolders
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=$dbpass
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_STORAGE_BUCKET_NAME=
+AWS_S3_ENDPOINT_URL=
+AWS_S3_REGION_NAME=auto
+EMAIL_HOST=
+EMAIL_PORT=587
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=Course Folder System &lt;no-reply@uiit.edu.pk&gt;
+MAX_UPLOAD_MB=50
+SIGNED_URL_TTL=300
+PDF_ENGINE=auto
+ENABLE_HTTPS=False
+CSRF_TRUSTED_ORIGINS=http://${ip}:8000
+WEB_CONCURRENCY=3
+GUNICORN_BIND=0.0.0.0:8000
+GUNICORN_TIMEOUT=60
+"@ | Set-Content -Encoding ascii .env
+Write-Host "Created .env for $ip" -ForegroundColor Green</pre>
+<p>You should see a green <em>"Created .env for ..."</em> line. Check it if you like:</p>
+<pre>Get-Content .env</pre>
+<div class="alt"><strong>Alternative - do it by hand:</strong> copy the sample and edit
+it in Notepad, setting <code>SECRET_KEY</code>, <code>POSTGRES_PASSWORD</code> (put the
+same password inside <code>DATABASE_URL</code> too), <code>ALLOWED_HOSTS</code>, and
+<code>CSRF_TRUSTED_ORIGINS</code>:
+<pre>Copy-Item .env.example .env
+notepad .env</pre></div>
+<div class="note">Leave <code>ENABLE_HTTPS=False</code> as it is - the site is served
+over plain <code>http://</code> on the LAN. The email lines can stay empty (see the
+last section). <strong>Never share the .env file - it holds the passwords.</strong></div>
+
+<h2>Step 7 - Give the machine a fixed IP address</h2>
+<p class="does">What this does: keeps the server's address from changing, so people
+can always reach it at the same web address.</p>
+<ul>
+  <li><strong>Best - ask IT for a "DHCP reservation"</strong> for this machine (they
+      need its Physical Address, shown by <code>ipconfig /all</code>).</li>
+  <li><strong>Or set it in Windows:</strong> Settings -&gt; <strong>Network &amp; Internet</strong>
+      -&gt; <strong>Change adapter options</strong> -&gt; right-click your adapter -&gt;
+      <strong>Properties</strong> -&gt; <strong>Internet Protocol Version 4 (TCP/IPv4)</strong>
+      -&gt; <strong>Use the following IP address</strong>, and enter the IP, subnet mask
+      (<code>255.255.255.0</code>), gateway, and DNS from your IT section.</li>
+</ul>
+
+<h2>Step 8 - Build and start the system</h2>
+<p class="does">What this does: builds the app, creates the database, and starts
+everything. This is the step that needs the internet (about 500 MB, one time).</p>
+<pre>docker compose -f docker-compose.prod.yml up -d --build</pre>
+<p>Wait a few minutes for it to finish. Then confirm both parts are running:</p>
+<pre>docker compose -f docker-compose.prod.yml ps</pre>
+<p>You should see <code>db</code> and <code>web</code>, both <em>running / healthy</em>.
+To watch the start-up log:</p>
+<pre>docker compose -f docker-compose.prod.yml logs -f web</pre>
+<p>When the log stops scrolling and shows it is listening on port 8000, press
+<code>Ctrl+C</code> to stop watching (this does NOT stop the server).</p>
+
+<h2>Step 9 - Create the first administrator (focal person)</h2>
+<p class="does">What this does: makes the main account that can log in and manage
+everyone. This is the only account made by command.</p>
+<pre>docker compose -f docker-compose.prod.yml exec web python manage.py createsuperuser</pre>
+<p>Type an <strong>email</strong> (this is the login name), a <strong>name</strong>, and a
+<strong>password</strong> (typed twice - it will not show on screen; that is normal).</p>
+
+<h2>Step 10 - Open the firewall for port 8000</h2>
+<p class="does">What this does: lets other computers on the network reach the site.</p>
+<pre>New-NetFirewallRule -DisplayName "Course Folder 8000" -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow</pre>
+
+<h2>Step 11 - Test that it works</h2>
+<ol>
+  <li><strong>On the server</strong>, open a browser to <code>http://localhost:8000</code>
+      - the login page should appear.</li>
+  <li><strong>From another PC or phone on the same network</strong>, open
+      <code>http://YOUR-IP:8000</code> (for example <code>http://192.168.1.50:8000</code>).
+      The same page should load.</li>
+  <li>Log in with the administrator email and password from Step 9.</li>
+  <li>Create a test faculty (next section) and log in as them on another device to
+      confirm the full flow.</li>
+</ol>
+
+<h2>Step 12 - Adding and managing users (no email needed)</h2>
+<p class="does">Because the server is offline, the administrator sets passwords
+directly - the system does not send emails.</p>
+<ul>
+  <li><strong>Add a user:</strong> <em>Faculty -&gt; Add faculty</em> -&gt; type their
+      name, email, role, and an <strong>initial password</strong> -&gt;
+      <strong>Create account</strong>. Tell the person their email and password.</li>
+  <li><strong>The user changes their own password</strong> from the change-password page
+      after signing in.</li>
+  <li><strong>Someone forgot their password?</strong> <em>Faculty list -&gt; Reset
+      password</em> next to their name -&gt; set a new one and share it.</li>
+</ul>
+
+<h2>Step 13 - Everyday running (start, stop, logs)</h2>
+<table>
+  <tr><th>Task</th><th>Command (run from <code>C:\course-folder</code>)</th></tr>
+  <tr><td>See what is running</td><td><code>docker compose -f docker-compose.prod.yml ps</code></td></tr>
+  <tr><td>View the log</td><td><code>docker compose -f docker-compose.prod.yml logs -f web</code></td></tr>
+  <tr><td>Stop (data is kept)</td><td><code>docker compose -f docker-compose.prod.yml down</code></td></tr>
+  <tr><td>Start again</td><td><code>docker compose -f docker-compose.prod.yml up -d</code></td></tr>
+  <tr><td>Restart just the app</td><td><code>docker compose -f docker-compose.prod.yml restart web</code></td></tr>
+</table>
+<p>The database and all uploaded documents are stored safely in Docker volumes and
+survive stop/start, reboots, and updates. With Docker set to start at sign-in
+(Step 4.3) the whole system comes back on its own after a reboot.</p>
+<div class="note">For a server nobody logs into daily, ask IT to enable automatic
+Windows sign-in for a dedicated local account, so Docker Desktop starts after a reboot
+without anyone signing in.</div>
+
+<h2>Step 14 - Backups (do this regularly)</h2>
+<p>Save the database to a file (make a folder such as <code>D:\backups</code> first):</p>
+<pre>docker compose -f docker-compose.prod.yml exec -T db pg_dump -U postgres coursefolders &gt; D:\backups\coursefolders.sql</pre>
+<p>Back up the uploaded documents (stored in the <code>media</code> volume):</p>
+<pre>docker run --rm -v course-folder_media:/data -v D:\backups:/backup busybox tar czf /backup/media.tar.gz -C /data .</pre>
+<p>(Check the exact volume name with <code>docker volume ls</code>; it is the folder name
+plus <code>_media</code>.) A fuller routine is in <code>docs/BACKUPS.md</code>.</p>
+
+<h2>Step 15 - Updating to a newer version later</h2>
+<p>Bring the new code onto the server (download a fresh ZIP as in Step 5, or
+<code>git pull</code> if you used Git), then rebuild - your data is not touched:</p>
+<pre>cd C:\course-folder
+docker compose -f docker-compose.prod.yml up -d --build</pre>
+
+<h2>Step 16 - If something goes wrong</h2>
+<table>
+  <tr><th>Problem</th><th>What to do</th></tr>
+  <tr><td><code>docker</code> is not recognized</td><td>Docker Desktop is not running.
+      Open it, wait for <em>Engine running</em>, retry.</td></tr>
+  <tr><td>Build fails while downloading</td><td>No internet. Connect the machine to the
+      internet for this step; it can go offline afterwards.</td></tr>
+  <tr><td><code>failed to resolve host 'db'</code></td><td>You ran the app outside
+      Docker. Always use the <code>docker compose ...</code> commands in this guide.</td></tr>
+  <tr><td>Other PCs cannot open the site</td><td>Check the firewall rule (Step 10),
+      that you used the correct IP, and that both devices are on the same network.</td></tr>
+  <tr><td>"Bad Request (400)"</td><td>The IP is not in <code>.env</code>. Re-do Step 6
+      with the correct IP, then <code>docker compose -f docker-compose.prod.yml up -d --force-recreate web</code>.</td></tr>
+  <tr><td>"Too many failed sign-in attempts"</td><td>A safety lock after several wrong
+      passwords. Wait about 15 minutes, then use the correct password.</td></tr>
+  <tr><td>Port 8000 already in use</td><td>Another program uses it. Close that program,
+      or ask for the port to be changed in <code>docker-compose.prod.yml</code>.</td></tr>
+</table>
+
+<div class="note"><strong>Email is optional.</strong> This offline setup does not need
+email - the administrator sets passwords directly (Step 12). If the server is ever
+connected to the internet and you want automatic emails, fill the <code>EMAIL_*</code>
+lines in <code>.env</code> and run
+<code>docker compose -f docker-compose.prod.yml up -d --force-recreate web</code>. See
+the separate <em>Email (SMTP) Configuration Guide</em> for the details.</div>
+
+<p style="margin-top:14px; color:#57534E;"><strong>That's the whole process.</strong>
+After Step 11 the system is live on the network; Steps 12-16 are for daily use and
+upkeep. Keep this guide with the server.</p>
+
+</body>
+</html>
