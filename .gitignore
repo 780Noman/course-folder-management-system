@@ -28,6 +28,10 @@ db.sqlite3
 # Large media / archives (kept out of git)
 *.mp4
 *.zip
+*.rar
+
+# Local test data: real course folders with student records — never publish
+/docs/BS-CS-3C-Mor-AI/
 
 # Tooling
 .pytest_cache/
