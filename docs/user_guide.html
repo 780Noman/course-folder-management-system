@@ -45,7 +45,7 @@
   <li>On the home page, click <strong>Sign in</strong> (the address is <code>/login/</code>).</li>
   <li>Enter your <strong>email</strong> and <strong>password</strong> and click <strong>Sign in</strong>. The system sends each user to the correct dashboard based on their role.</li>
 </ol>
-<p class="note">The very first Admin account is created once by the system administrator during setup. Every other user is added by the Admin through the invitation process described below; no one can self-register.</p>
+<p class="note">The very first Admin account is created once by the system administrator during setup. Every other user is added by the Admin, who creates the account with an initial password and shares it; no one can self-register.</p>
 
 <h2>3. Focal Person (Admin) - step by step</h2>
 
@@ -63,12 +63,12 @@
   <li>The course folder with all 28 checklist items is created automatically for that course.</li>
 </ol>
 
-<h3>3.3 Invite a faculty member</h3>
+<h3>3.3 Add a user (faculty or admin)</h3>
 <ol>
   <li>Open <strong>Manage faculty</strong>, then click <strong>Add faculty</strong>.</li>
-  <li>Enter the person's <strong>name</strong> and <strong>email</strong> and send the invitation.</li>
-  <li>The system emails that address a single-use, time-limited link. The Admin never sets or sees the faculty member's password.</li>
-  <li>On <strong>Manage faculty</strong> you can search by name or email and <strong>Deactivate</strong> or <strong>Reactivate</strong> any member. A deactivated member cannot sign in; their past courses are preserved.</li>
+  <li>Enter the person's <strong>name</strong>, <strong>email</strong>, <strong>role</strong>, and an <strong>initial password</strong>, then click <strong>Create account</strong>.</li>
+  <li>Tell the user their email and initial password; they can change it themselves after signing in. (This offline setup does not send invitation emails.)</li>
+  <li>On <strong>Manage faculty</strong> you can search by name or email, <strong>Reset password</strong> for anyone who is locked out, and <strong>Deactivate</strong> or <strong>Reactivate</strong> any member. A deactivated member cannot sign in; their past courses are preserved.</li>
 </ol>
 
 <h3>3.4 Review a submitted folder</h3>
@@ -94,10 +94,11 @@
 
 <h2>4. Faculty - step by step</h2>
 
-<h3>4.1 Activate your account</h3>
+<h3>4.1 Sign in for the first time</h3>
 <ol>
-  <li>Open the invitation email and click the secure link.</li>
-  <li>On <strong>Set your password</strong>, choose a password and confirm it. Your password is saved securely and you are signed in. The link works once and expires after a few days.</li>
+  <li>The Admin gives you your <strong>email</strong> and an <strong>initial password</strong>.</li>
+  <li>Open the system web address, click <strong>Sign in</strong>, and enter them.</li>
+  <li>Change your password from the <strong>Change password</strong> page (recommended) - your new password is known only to you.</li>
 </ol>
 
 <h3>4.2 Open a course folder</h3>
@@ -113,6 +114,7 @@
   <li>Allowed file types: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, JPG, PNG. Maximum size: 100 MB. Images show a thumbnail.</li>
   <li>To remove a file, click <strong>Delete</strong> under it.</li>
 </ol>
+<p class="note"><strong>Shortcut - bulk upload from a folder:</strong> at the top of the course folder, open <strong>Bulk upload from a folder</strong> to pick (or drag) a folder from your computer whose subfolders are named by the checklist number, e.g. <code>1 Academic Calendar</code>, <code>2 Timetable</code>. The system maps each subfolder to its item, shows a review with missing items in red, and uploads only after you confirm. Name one folder per number (not a range like <code>11-14</code>); for (W, A, B) items, put the samples in <code>W</code>/<code>A</code>/<code>B</code> subfolders or include worst/average/best in the file name.</p>
 
 <h3>4.4 Worst / Average / Best samples</h3>
 <p>Items marked (W, A, B) - quizzes, assignments, mid and final exam scripts - require three samples: a <strong>Worst</strong>, an <strong>Average</strong>, and a <strong>Best</strong> example. Upload one file into each of the three groups. The item counts as complete only when all three groups have a file.</p>
@@ -134,9 +136,9 @@
 
 <h2>5. Passwords</h2>
 <ul>
-  <li><strong>Setting your password:</strong> done once through the invitation link (faculty) or at account creation (first admin).</li>
-  <li><strong>Forgot password:</strong> on the sign-in page click <strong>Forgot your password?</strong>, enter your email, and follow the reset link sent to you.</li>
-  <li>Passwords are stored only in secure hashed form; they are never emailed or shown to anyone.</li>
+  <li><strong>Setting your password:</strong> the Admin creates your account with an initial password and shares it; change it yourself from <strong>Change password</strong> after signing in. The first admin sets their own password when the system is set up.</li>
+  <li><strong>Forgot password:</strong> ask the Admin to reset it - <strong>Manage faculty -&gt; Reset password</strong> next to your name - and share the new one. (This offline setup does not send password-reset emails.)</li>
+  <li>Passwords are stored only in secure hashed form. Apart from the initial or reset password the Admin sets during onboarding, passwords are never shown to anyone.</li>
 </ul>
 
 <h2>6. Rules to remember</h2>
