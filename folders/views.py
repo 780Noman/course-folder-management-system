@@ -1,5 +1,6 @@
 """Course folder views (faculty folder view + flexible items)."""
 
+import logging
 import re
 
 from django.conf import settings
@@ -9,6 +10,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Max
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from academics.models import Course
@@ -30,6 +32,8 @@ from .services import (
     save_item_file,
 )
 from .validators import validate_upload
+
+logger = logging.getLogger(__name__)
 
 # Count-variable families faculty can grow/shrink to match the course.
 FAMILIES = {
@@ -106,6 +110,21 @@ def folder_detail(request, course_id):
         section("Final-term", Phase.FINAL, True),
     ]
     overall = CourseFolder.progress(items)
+    is_owner = course.instructor_id == request.user.id
+
+    # Compact list the bulk-upload panel maps local subfolders onto (owner only).
+    bulk_items = None
+    if is_owner:
+        bulk_items = [
+            {
+                "pk": i.pk,
+                "order": i.order,
+                "title": i.title,
+                "allows_samples": i.allows_samples,
+                "upload_url": reverse("file_upload", args=[i.pk]),
+            }
+            for i in items
+        ]
 
     return render(
         request,
@@ -116,7 +135,9 @@ def folder_detail(request, course_id):
             "sections": sections,
             "overall": overall,
             "add_kinds": [("quiz", "quiz"), ("assignment", "assignment")],
-            "is_owner": course.instructor_id == request.user.id,
+            "is_owner": is_owner,
+            "bulk_items": bulk_items,
+            "max_upload_mb": settings.MAX_UPLOAD_MB,
             "mid_ready": folder.is_phase_complete(CourseFolder.MID_PHASES),
             "final_ready": folder.is_phase_complete(CourseFolder.FINAL_PHASES),
         },
@@ -234,8 +255,15 @@ def _get_item_for_edit(request, item_id):
 @login_required
 @require_POST
 def file_upload(request, item_id):
-    """Upload a file to a checklist item (stored in private object storage)."""
+    """Upload one or more files to a checklist item (private object storage).
+
+    Accepts a single file (the manual per-item form) or many (the folder
+    bulk-upload panel sends a whole subfolder at once). Every file is validated
+    and saved independently, so one bad file never aborts the rest; a per-request
+    summary of what succeeded and what failed is returned.
+    """
     item = _get_item_for_edit(request, item_id)
+
     def _respond(error=None, uploaded_name=None):
         # HTMX: swap the row in place (status + evidence) and refresh progress bars.
         if request.htmx:
@@ -248,8 +276,8 @@ def file_upload(request, item_id):
             messages.success(request, f"Uploaded “{uploaded_name}”.")
         return redirect("folder_detail", course_id=item.folder.course_id)
 
-    upload = request.FILES.get("file")
-    if not upload:
+    uploads = request.FILES.getlist("file")
+    if not uploads:
         return _respond(error="No file selected.")
 
     # Sample (W/A/B) items require the target group; ordinary items ignore it.
@@ -259,13 +287,27 @@ def file_upload(request, item_id):
         if sample_kind not in {SampleKind.WORST, SampleKind.AVERAGE, SampleKind.BEST}:
             return _respond(error="Choose a sample group (Worst, Average, or Best).")
 
-    try:
-        validate_upload(upload)
-    except ValidationError as exc:
-        return _respond(error=" ".join(exc.messages))
+    saved, failures = [], []
+    for upload in uploads:
+        try:
+            validate_upload(upload)
+            save_item_file(item, upload, request.user, sample_kind=sample_kind)
+            saved.append(upload.name)
+        except ValidationError as exc:
+            failures.append(f"{upload.name}: {' '.join(exc.messages)}")
+        except Exception:  # storage/thumbnail/unexpected — never abort the batch
+            logger.exception(
+                "Upload failed for %r on item %s", upload.name, item.pk
+            )
+            failures.append(f"{upload.name}: could not be saved, please retry.")
 
-    save_item_file(item, upload, request.user, sample_kind=sample_kind)
-    return _respond(uploaded_name=upload.name)
+    error = None
+    if failures:
+        error = "Some files were not uploaded — " + "; ".join(failures)
+    uploaded_name = None
+    if saved:
+        uploaded_name = saved[0] if len(saved) == 1 else f"{len(saved)} files"
+    return _respond(error=error, uploaded_name=uploaded_name)
 
 
 def _get_file_for_access(request, file_id):

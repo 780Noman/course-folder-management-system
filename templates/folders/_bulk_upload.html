@@ -1,0 +1,380 @@
+{# Owner-only folder bulk-upload: pick/drag a course folder whose subfolders are #}
+{# named by the checklist Sr# (e.g. "1 Academic Calendar"), auto-map each to its #}
+{# item, review (missing shown red), then upload field-by-field. Manual per-item #}
+{# upload stays available; client pre-checks are advisory, server re-validates. #}
+{{ bulk_items|json_script:"bulk-items-data" }}
+
+<div id="bulk-panel" class="mt-4" x-data="bulkUpload()">
+  {% csrf_token %}
+  <button type="button" @click="open = !open"
+          class="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-card px-5 py-3 text-left shadow-sm hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+    <span class="min-w-0">
+      <span class="block text-sm font-semibold text-foreground">Bulk upload from a folder</span>
+      <span class="block text-xs text-muted-foreground">Pick a course folder whose subfolders are named like &ldquo;1 Academic Calendar&rdquo;, review the mapping, then upload.</span>
+    </span>
+    <svg class="h-5 w-5 shrink-0 text-muted-foreground transition-transform" :class="open && 'rotate-180'"
+         viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.19l3.71-3.96a.75.75 0 111.08 1.04l-4.25 4.53a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+    </svg>
+  </button>
+
+  <div x-show="open" x-cloak class="mt-3 rounded-lg border border-border bg-card p-5 shadow-sm">
+
+    {# Picker + drop zone (hidden while uploading) #}
+    <div x-show="stage !== 'uploading'">
+      <div class="rounded-md border-2 border-dashed p-6 text-center transition-colors"
+           :class="dragOver ? 'border-primary bg-muted' : 'border-border'"
+           @dragover.prevent="dragOver = true" @dragleave.prevent="dragOver = false" @drop.prevent="onDrop($event)">
+        <p class="text-sm text-muted-foreground">Drag a course folder here, or</p>
+        <label class="mt-2 inline-flex cursor-pointer items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-on-primary hover:bg-primary-strong focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+          Choose folder
+          <input type="file" webkitdirectory directory multiple class="sr-only" @change="onPick($event)">
+        </label>
+        <p class="mt-2 text-xs text-muted-foreground" x-show="rootName" x-text="'Selected: ' + rootName"></p>
+        <p class="mt-1 text-xs text-muted-foreground">Allowed: pdf, doc, docx, ppt, pptx, xls, xlsx, jpg, png &middot; up to {{ max_upload_mb }} MB each.</p>
+      </div>
+    </div>
+
+    {# Review #}
+    <template x-if="stage === 'review'">
+      <div class="mt-4">
+        <p class="text-sm text-foreground">
+          <span class="font-medium" x-text="matchedCount"></span> item(s) matched,
+          <span class="font-medium text-destructive" x-text="missingCount"></span> missing.
+          <span x-text="uploadableCount"></span> file(s) ready to upload.
+        </p>
+
+        <div class="mt-3 overflow-x-auto rounded-md border border-border">
+          <table class="min-w-full divide-y divide-gray-100 text-sm">
+            <thead class="bg-muted text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th class="px-3 py-2">Sr#</th>
+                <th class="px-3 py-2">Checklist item</th>
+                <th class="px-3 py-2">Matched folder</th>
+                <th class="px-3 py-2">Files</th>
+                <th class="px-3 py-2">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <template x-for="r in rows" :key="r.pk">
+                <tr :class="r.status === 'missing' && 'bg-destructive/5'">
+                  <td class="px-3 py-2 text-muted-foreground" x-text="r.order"></td>
+                  <td class="px-3 py-2 font-medium text-foreground" x-text="r.title"></td>
+                  <td class="px-3 py-2 text-muted-foreground" x-text="r.folderName || '—'"></td>
+                  <td class="px-3 py-2 text-muted-foreground" x-text="r.count"></td>
+                  <td class="px-3 py-2">
+                    <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                          :class="{
+                            'bg-green-100 text-green-800': r.status === 'matched',
+                            'bg-amber-100 text-amber-800': r.status === 'manual' || r.status === 'partial',
+                            'bg-destructive/10 text-destructive': r.status === 'missing'
+                          }"
+                          x-text="r.label"></span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        {# Folders that matched nothing #}
+        <template x-if="unmatched.length">
+          <div class="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+            <p class="font-medium">These folders did not match any checklist item (nothing will be uploaded from them):</p>
+            <ul class="mt-1 list-disc pl-5">
+              <template x-for="u in unmatched" :key="u.name">
+                <li><span x-text="u.name"></span> (<span x-text="u.count"></span> files)</li>
+              </template>
+            </ul>
+          </div>
+        </template>
+
+        {# Files skipped by the advisory pre-check #}
+        <template x-if="skipped.length">
+          <div class="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+            <p class="font-medium">Skipped (type not allowed, empty, or too large):</p>
+            <ul class="mt-1 list-disc pl-5">
+              <template x-for="s in skipped" :key="s.name + s.reason">
+                <li><span x-text="s.name"></span> &mdash; <span x-text="s.reason"></span></li>
+              </template>
+            </ul>
+          </div>
+        </template>
+
+        <div class="mt-4 flex items-center gap-2">
+          <button type="button" @click="startUpload()" :disabled="!uploadableCount"
+                  class="cursor-pointer rounded-md bg-primary px-4 py-2 text-sm font-medium text-on-primary hover:bg-primary-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  :class="!uploadableCount && 'opacity-50 cursor-not-allowed'">
+            Upload matched files (<span x-text="uploadableCount"></span>)
+          </button>
+          <button type="button" @click="reset()"
+                  class="cursor-pointer rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            Clear
+          </button>
+        </div>
+      </div>
+    </template>
+
+    {# Uploading #}
+    <template x-if="stage === 'uploading'">
+      <div class="mt-4">
+        <p class="text-sm text-foreground">Uploading&hellip; <span x-text="progress.done"></span> / <span x-text="progress.total"></span></p>
+        <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div class="h-full bg-primary transition-all" :style="'width:' + pct + '%'"></div>
+        </div>
+        <p class="mt-1 truncate text-xs text-muted-foreground" x-text="currentLabel"></p>
+      </div>
+    </template>
+
+    {# Done #}
+    <template x-if="stage === 'done'">
+      <div class="mt-4">
+        <p class="text-sm font-medium text-success" x-show="okFiles">Uploaded <span x-text="okFiles"></span> file(s).</p>
+        <template x-if="failed.length">
+          <div class="mt-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+            <p class="font-medium">Some groups failed and were not uploaded:</p>
+            <ul class="mt-1 list-disc pl-5">
+              <template x-for="f in failed" :key="f"><li x-text="f"></li></template>
+            </ul>
+          </div>
+        </template>
+        <button type="button" @click="reloadPage()"
+                class="mt-3 cursor-pointer rounded-md bg-primary px-4 py-2 text-sm font-medium text-on-primary hover:bg-primary-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          Reload to see the updated folder
+        </button>
+      </div>
+    </template>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('bulkUpload', () => ({
+      open: false,
+      stage: 'idle',            // idle | review | uploading | done
+      dragOver: false,
+      rootName: '',
+      items: JSON.parse(document.getElementById('bulk-items-data').textContent),
+      maxBytes: {{ max_upload_mb }} * 1024 * 1024,
+      allowedExt: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png'],
+      rows: [],
+      unmatched: [],
+      skipped: [],
+      progress: { done: 0, total: 0 },
+      currentLabel: '',
+      okFiles: 0,
+      failed: [],
+      csrf: '',
+
+      init() {
+        const input = this.$root.querySelector('input[name=csrfmiddlewaretoken]');
+        this.csrf = input ? input.value : '';
+      },
+
+      norm(s) {
+        return (s || '')
+          .normalize('NFC').toLowerCase()
+          .replace(/\(\s*w\s*,\s*a\s*,\s*b\s*\)/g, '')
+          .replace(/[_\-.]+/g, ' ')
+          .replace(/\s+/g, ' ').trim();
+      },
+
+      wabKind(seg) {
+        const s = this.norm(seg);
+        if (s === 'w' || s === 'worst') return 'WORST';
+        if (s === 'a' || s === 'average' || s === 'avg') return 'AVERAGE';
+        if (s === 'b' || s === 'best') return 'BEST';
+        return null;
+      },
+
+      // Fallback for sample items with no W/A/B subfolder: read the group from
+      // the filename (e.g. "worst assignment 1.pdf", "BSCS 3AI best.pdf").
+      wabFromName(name) {
+        const s = this.norm(name);
+        if (/\bworst\b/.test(s)) return 'WORST';
+        if (/\baverage\b|\bavg\b/.test(s)) return 'AVERAGE';
+        if (/\bbest\b/.test(s)) return 'BEST';
+        return null;
+      },
+
+      matchItem(name) {
+        const m = (name || '').match(/^\s*0*(\d+)/);   // leading Sr#
+        if (m) {
+          const byNum = this.items.find(i => i.order === parseInt(m[1], 10));
+          if (byNum) return byNum;
+        }
+        const n = this.norm(name);
+        // Require a real word before fuzzy-matching titles, so short markers
+        // like a "W"/"A"/"B" sample subfolder never match an item by accident.
+        if (n.length < 4) return null;
+        return this.items.find(i => {           // fallback: title contains / contained
+          const t = this.norm(i.title);
+          return t && t.length >= 4 && (n.includes(t) || t.includes(n));
+        }) || null;
+      },
+
+      relPath(f) { return f._rel || f.webkitRelativePath || f.name; },
+
+      onPick(e) { this.ingest(Array.from(e.target.files)); },
+
+      onDrop(e) {
+        this.dragOver = false;
+        const dtItems = e.dataTransfer.items;
+        if (dtItems && dtItems.length && dtItems[0].webkitGetAsEntry) {
+          const files = [];
+          const walk = (entry, path) => new Promise(resolve => {
+            if (entry.isFile) {
+              entry.file(f => { f._rel = path + entry.name; files.push(f); resolve(); }, () => resolve());
+            } else if (entry.isDirectory) {
+              const reader = entry.createReader();
+              const readBatch = () => reader.readEntries(async entries => {
+                if (!entries.length) { resolve(); return; }
+                for (const en of entries) { await walk(en, path + entry.name + '/'); }
+                readBatch();
+              }, () => resolve());
+              readBatch();
+            } else { resolve(); }
+          });
+          const roots = [];
+          for (const it of dtItems) {
+            const en = it.webkitGetAsEntry && it.webkitGetAsEntry();
+            if (en) roots.push(en);
+          }
+          Promise.all(roots.map(en => walk(en, ''))).then(() => this.ingest(files));
+        } else if (e.dataTransfer.files && e.dataTransfer.files.length) {
+          this.ingest(Array.from(e.dataTransfer.files));
+        }
+      },
+
+      ingest(files) {
+        const map = {};          // pk -> {plain, WORST, AVERAGE, BEST, manual, folderName}
+        const unmatched = {};
+        const skipped = [];
+        this.rootName = '';
+
+        for (const f of files) {
+          const segs = this.relPath(f).split('/').filter(Boolean);
+          if (!this.rootName && segs.length) this.rootName = segs[0];
+          const ancestors = segs.slice(0, -1);        // folders above the file
+
+          // Deepest ancestor that maps to a checklist item is the item folder.
+          let item = null, idx = -1;
+          for (let k = ancestors.length - 1; k >= 0; k--) {
+            const hit = this.matchItem(ancestors[k]);
+            if (hit) { item = hit; idx = k; break; }
+          }
+          if (!item) {
+            const key = ancestors.length ? ancestors[ancestors.length - 1] : '(loose files)';
+            (unmatched[key] = unmatched[key] || { name: key, count: 0 }).count++;
+            continue;
+          }
+
+          // Advisory pre-checks (server re-validates).
+          const ext = (f.name.split('.').pop() || '').toLowerCase();
+          if (!this.allowedExt.includes(ext)) { skipped.push({ name: f.name, reason: 'type .' + ext + ' not allowed' }); continue; }
+          if (f.size === 0) { skipped.push({ name: f.name, reason: 'empty file' }); continue; }
+          if (f.size > this.maxBytes) { skipped.push({ name: f.name, reason: 'over {{ max_upload_mb }} MB' }); continue; }
+
+          const slot = map[item.pk] = map[item.pk] || { plain: [], WORST: [], AVERAGE: [], BEST: [], manual: 0, folderName: ancestors[idx] };
+          if (item.allows_samples) {
+            // Prefer a W/A/B subfolder; else infer the group from the filename;
+            // otherwise leave the file for manual assignment.
+            const wab = (ancestors[idx + 1] ? this.wabKind(ancestors[idx + 1]) : null)
+                        || this.wabFromName(f.name);
+            if (wab) slot[wab].push(f); else slot.manual++;
+          } else {
+            slot.plain.push(f);
+          }
+        }
+
+        // A row for EVERY checklist item so missing ones are visible (red).
+        this.rows = this.items.map(i => {
+          const s = map[i.pk];
+          let count = 0, status = 'missing', label = 'Missing';
+          if (s) {
+            if (i.allows_samples) {
+              count = s.WORST.length + s.AVERAGE.length + s.BEST.length;
+              if (count > 0 && s.manual > 0) { status = 'partial'; label = 'Matched (+' + s.manual + ' need W/A/B)'; }
+              else if (count > 0) { status = 'matched'; label = 'Matched'; }
+              else if (s.manual > 0) { status = 'manual'; label = s.manual + ' file(s) — assign W/A/B manually'; }
+            } else {
+              count = s.plain.length;
+              if (count > 0) { status = 'matched'; label = 'Matched'; }
+            }
+          }
+          return {
+            pk: i.pk, order: i.order, title: i.title, allows_samples: i.allows_samples,
+            folderName: s ? s.folderName : '', count, status, label,
+            upload_url: i.upload_url, _slot: s || null,
+          };
+        });
+
+        this.unmatched = Object.values(unmatched);
+        this.skipped = skipped;
+        this.stage = 'review';
+      },
+
+      get matchedCount() { return this.rows.filter(r => r.status === 'matched' || r.status === 'partial').length; },
+      get missingCount() { return this.rows.filter(r => r.status === 'missing').length; },
+      get uploadableCount() {
+        let n = 0;
+        for (const r of this.rows) {
+          if (!r._slot) continue;
+          n += r.allows_samples
+            ? r._slot.WORST.length + r._slot.AVERAGE.length + r._slot.BEST.length
+            : r._slot.plain.length;
+        }
+        return n;
+      },
+      get pct() { return this.progress.total ? Math.round(this.progress.done * 100 / this.progress.total) : 0; },
+
+      buildTasks() {
+        const tasks = [];
+        for (const r of this.rows) {
+          if (!r._slot) continue;
+          if (r.allows_samples) {
+            for (const k of ['WORST', 'AVERAGE', 'BEST']) {
+              if (r._slot[k].length) tasks.push({ url: r.upload_url, files: r._slot[k], kind: k, label: r.order + '. ' + r.title + ' (' + k + ')' });
+            }
+          } else if (r._slot.plain.length) {
+            tasks.push({ url: r.upload_url, files: r._slot.plain, kind: null, label: r.order + '. ' + r.title });
+          }
+        }
+        return tasks;
+      },
+
+      async startUpload() {
+        const tasks = this.buildTasks();
+        if (!tasks.length) return;
+        this.stage = 'uploading';
+        this.progress = { done: 0, total: tasks.length };
+        this.okFiles = 0;
+        this.failed = [];
+
+        for (const t of tasks) {
+          this.currentLabel = t.label;
+          const fd = new FormData();
+          fd.append('csrfmiddlewaretoken', this.csrf);
+          if (t.kind) fd.append('sample_kind', t.kind);
+          for (const f of t.files) fd.append('file', f, f.name);
+          try {
+            const resp = await fetch(t.url, {
+              method: 'POST', body: fd,
+              headers: { 'HX-Request': 'true', 'X-CSRFToken': this.csrf },
+              credentials: 'same-origin',
+            });
+            if (resp.ok) { this.okFiles += t.files.length; }
+            else { this.failed.push(t.label + ' (server error ' + resp.status + ')'); }
+          } catch (err) {
+            this.failed.push(t.label + ' (network error)');
+          }
+          this.progress.done++;
+        }
+        this.stage = 'done';
+      },
+
+      reloadPage() { window.location.reload(); },
+      reset() { this.stage = 'idle'; this.rows = []; this.unmatched = []; this.skipped = []; this.rootName = ''; },
+    }));
+  });
+</script>
