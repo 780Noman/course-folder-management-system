@@ -7,24 +7,37 @@ the actual leading bytes must all agree, and the size must be within the limit.
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
-ALLOWED_EXTENSIONS = {"pdf", "doc", "docx", "jpg", "jpeg", "png"}
+ALLOWED_EXTENSIONS = {
+    "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "jpg", "jpeg", "png",
+}
 
 ALLOWED_CONTENT_TYPES = {
     "application/pdf",
     "application/msword",  # .doc
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
+    "application/vnd.ms-powerpoint",  # .ppt
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",  # .pptx
+    "application/vnd.ms-excel",  # .xls
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # .xlsx
     "image/jpeg",
     "image/png",
 }
 
-# Leading "magic" bytes expected for each extension.
+# Leading "magic" bytes expected for each extension. OOXML formats (docx/pptx/xlsx)
+# are zip containers; legacy Office formats (doc/ppt/xls) are OLE2 compound files.
+_OOXML = [b"PK\x03\x04"]
+_OLE2 = [b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"]
 _MAGIC = {
     "pdf": [b"%PDF"],
     "png": [b"\x89PNG\r\n\x1a\n"],
     "jpg": [b"\xff\xd8\xff"],
     "jpeg": [b"\xff\xd8\xff"],
-    "docx": [b"PK\x03\x04"],  # OOXML is a zip container
-    "doc": [b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"],  # OLE2 compound file
+    "docx": _OOXML,
+    "pptx": _OOXML,
+    "xlsx": _OOXML,
+    "doc": _OLE2,
+    "ppt": _OLE2,
+    "xls": _OLE2,
 }
 
 _IMAGE_EXTS = {"png", "jpg", "jpeg"}

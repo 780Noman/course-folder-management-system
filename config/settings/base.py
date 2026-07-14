@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env = environ.Env(
     DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, []),
-    MAX_UPLOAD_MB=(int, 50),
+    MAX_UPLOAD_MB=(int, 100),
 )
 
 # Load a local .env file if present (never committed). In production the

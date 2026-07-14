@@ -81,3 +81,27 @@ def test_valid_png_accepted(faculty_client, item):
     resp = _upload(faculty_client, item, good)
     assert ItemFile.objects.filter(item=item).count() == 1
     assert b"Uploaded" in resp.content
+
+
+@pytest.mark.django_db
+def test_pptx_accepted(faculty_client, item):
+    """Lecture slides are commonly PowerPoint; .pptx (OOXML zip) is allowed."""
+    deck = SimpleUploadedFile(
+        "lecture.pptx", b"PK\x03\x04" + b"0" * 64,
+        content_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    )
+    resp = _upload(faculty_client, item, deck)
+    assert ItemFile.objects.filter(item=item).count() == 1
+    assert b"Uploaded" in resp.content
+
+
+@pytest.mark.django_db
+def test_xlsx_accepted(faculty_client, item):
+    """Marks/grading sheets are commonly Excel; .xlsx (OOXML zip) is allowed."""
+    sheet = SimpleUploadedFile(
+        "marks.xlsx", b"PK\x03\x04" + b"0" * 64,
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    resp = _upload(faculty_client, item, sheet)
+    assert ItemFile.objects.filter(item=item).count() == 1
+    assert b"Uploaded" in resp.content
