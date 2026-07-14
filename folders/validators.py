@@ -52,7 +52,8 @@ def validate_upload(uploaded_file):
     ext = _extension(uploaded_file.name)
     if ext not in ALLOWED_EXTENSIONS:
         raise ValidationError(
-            "File type is not allowed. Allowed types: PDF, DOC, DOCX, JPG, PNG."
+            "File type is not allowed. Allowed types: "
+            "PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, JPG, PNG."
         )
 
     max_bytes = settings.MAX_UPLOAD_MB * 1024 * 1024

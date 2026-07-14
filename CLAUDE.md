@@ -72,8 +72,9 @@ These rules are non-negotiable:
 ## 6. Security rules (apply everywhere)
 
 - Enforce role-based access on the server for every view and object.
-- Validate every upload: extension whitelist (pdf, doc, docx, jpg, png), size
-  <= 50 MB, and content-type. Store under per-course/per-item keys.
+- Validate every upload: extension whitelist (pdf, doc, docx, ppt, pptx, xls,
+  xlsx, jpg, png), size <= 100 MB, and content-type. Store under
+  per-course/per-item keys.
 - CSRF protection on, secure cookies, security headers, login rate-limiting and
   lockout, and an audit log of create/update/delete/issue actions.
 - Secrets only via environment variables (`django-environ`). Never commit `.env`.
