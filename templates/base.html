@@ -5,12 +5,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Course Folder Management System{% endblock %}</title>
-  <link rel="icon" href="{% static 'img/uiit-logo.jpg' %}">
+  <link rel="icon" href="{% static 'img/arid-logo.png' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
   <script src="{% static 'js/alpine.min.js' %}" defer></script>
 </head>
-<body class="min-h-screen bg-background text-foreground antialiased">
+<body class="flex min-h-screen flex-col bg-background text-foreground antialiased">
   <a href="#main"
      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-on-primary">
     Skip to main content
@@ -38,9 +38,11 @@
       </div>
     {% endif %}
 
-    <main id="main" class="mx-auto max-w-6xl px-4 py-8">
+    <main id="main" class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
       {% block content %}{% endblock %}
     </main>
+
+    {% if request.user.is_authenticated %}{% include "partials/_footer.html" %}{% endif %}
   {% endblock %}
 </body>
 </html>

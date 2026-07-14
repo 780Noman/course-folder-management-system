@@ -12,28 +12,19 @@
   <header class="relative z-10">
     <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 text-on-primary">
       <div class="flex items-center gap-3">
-        <img src="{% static 'img/uiit-logo.jpg' %}" alt="UIIT" class="h-11 w-11 rounded-full ring-2 ring-white/30">
+        <img src="{% static 'img/uiit-logo.jpg' %}" alt="UIIT"
+             class="h-11 w-11 rounded-full object-cover ring-2 ring-white/30">
         <span class="text-sm font-semibold">Course Folder Management System</span>
       </div>
-      {% if request.user.is_authenticated %}
-        <a href="{% url 'dashboard' %}"
-           class="cursor-pointer rounded-md bg-white px-4 py-2 text-sm font-medium text-primary-strong hover:bg-white/90">
-          Go to dashboard
-        </a>
-      {% else %}
-        <a href="{% url 'login' %}"
-           class="cursor-pointer rounded-md bg-white px-4 py-2 text-sm font-medium text-primary-strong hover:bg-white/90">
-          Sign in
-        </a>
-      {% endif %}
+      <img src="{% static 'img/arid-logo.png' %}" alt="PMAS Arid Agriculture University"
+           class="h-11 w-11 rounded-full bg-white object-contain p-0.5 ring-2 ring-white/30">
     </div>
   </header>
 
   <!-- Hero -->
   <main id="main" class="relative z-10 flex flex-1 items-center">
     <div class="mx-auto max-w-3xl px-4 py-20 text-center text-on-primary">
-      <img src="{% static 'img/uiit-logo.jpg' %}" alt="" class="mx-auto h-24 w-24 rounded-full ring-4 ring-white/25">
-      <h1 class="mt-8 text-4xl font-semibold leading-tight sm:text-5xl">
+      <h1 class="text-4xl font-semibold leading-tight sm:text-5xl">
         Course Folder Review, done right
       </h1>
       <p class="mx-auto mt-4 max-w-2xl text-lg text-white/85">
@@ -51,7 +42,8 @@
   </main>
 
   <footer class="relative z-10 px-4 py-6 text-center text-sm text-white/70">
-    &copy; UIIT &middot; PMAS Arid Agriculture University, Rawalpindi
+    <p>Developed by: Noman Amjad &middot; Supervised by: Dr. Noureen Zafar</p>
+    <p class="mt-0.5">&copy; UIIT &middot; PMAS Arid Agriculture University, Rawalpindi</p>
   </footer>
 </div>
 {% endblock %}
