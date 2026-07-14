@@ -5,7 +5,12 @@
   <style>
     @page { size: A4; margin: 2cm; }
     body { font-family: "Georgia", "Times New Roman", serif; color: #1C1917; font-size: 11px; }
-    .header { text-align: center; border-bottom: 3px solid #166534; padding-bottom: 8px; margin-bottom: 14px; }
+    .header { border-bottom: 3px solid #166534; padding-bottom: 8px; margin-bottom: 14px; }
+    .brand { width: 100%; border-collapse: collapse; }
+    .brand td { border: none; padding: 0; vertical-align: middle; }
+    .brand-logo { width: 70px; }
+    .brand-text { text-align: center; }
+    .brand img { width: 60px; height: 60px; }
     .university { font-size: 15px; font-weight: bold; color: #14532D; }
     .institute { font-size: 12px; }
     h1 { font-size: 16px; text-align: center; margin: 14px 0; text-transform: uppercase; letter-spacing: 1px; color: #166534; }
@@ -26,8 +31,20 @@
 </head>
 <body>
   <div class="header">
-    <div class="university">PMAS Arid Agriculture University, Rawalpindi</div>
-    <div class="institute">University Institute of Information Technology (UIIT)</div>
+    <table class="brand">
+      <tr>
+        <td class="brand-logo" style="text-align:left;">
+          {% if uiit_logo %}<img src="{{ uiit_logo }}" alt="UIIT">{% endif %}
+        </td>
+        <td class="brand-text">
+          <div class="university">PMAS Arid Agriculture University, Rawalpindi</div>
+          <div class="institute">University Institute of Information Technology (UIIT)</div>
+        </td>
+        <td class="brand-logo" style="text-align:right;">
+          {% if arid_logo %}<img src="{{ arid_logo }}" alt="PMAS Arid Agriculture University">{% endif %}
+        </td>
+      </tr>
+    </table>
   </div>
 
   <h1>Course Folder Review Certificate</h1>
