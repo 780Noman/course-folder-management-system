@@ -1,16 +1,28 @@
 {# Upload form for an item; pass sample_kind to upload into a W/A/B group (inline via HTMX). #}
-<form method="post" enctype="multipart/form-data" action="{% url 'file_upload' item.pk %}"
-      class="mt-2 flex items-center gap-2"
+<form x-data="{ chosen: false, fname: '' }"
+      method="post" enctype="multipart/form-data" action="{% url 'file_upload' item.pk %}"
+      class="mt-2"
       hx-post="{% url 'file_upload' item.pk %}"
       hx-target="#item-{{ item.pk }}"
       hx-swap="outerHTML"
       hx-encoding="multipart/form-data">
   {% csrf_token %}
   {% if sample_kind %}<input type="hidden" name="sample_kind" value="{{ sample_kind }}">{% endif %}
-  <input type="file" name="file" required
-         class="block w-full text-xs text-muted-foreground file:mr-2 file:cursor-pointer file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-on-primary hover:file:bg-primary-strong">
-  <button type="submit"
-          class="cursor-pointer rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-    Upload
-  </button>
+  <div class="flex items-center gap-2">
+    <input type="file" name="file" required
+           @change="chosen = $event.target.files.length > 0; fname = chosen ? $event.target.files[0].name : ''"
+           class="block w-full text-xs text-muted-foreground file:mr-2 file:cursor-pointer file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-on-primary hover:file:bg-primary-strong">
+    <button type="submit"
+            :class="chosen
+              ? 'border-primary bg-primary text-on-primary hover:bg-primary-strong'
+              : 'border-border bg-card text-foreground hover:bg-muted'"
+            class="cursor-pointer shrink-0 rounded-md border px-3 py-1.5 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      Upload
+    </button>
+  </div>
+  <p x-show="chosen" x-cloak class="mt-1 flex items-center gap-1.5 text-[11px] text-primary">
+    <span class="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-primary"></span>
+    <span class="truncate font-medium" x-text="fname"></span>
+    <span class="shrink-0 text-muted-foreground">&mdash; ready to upload</span>
+  </p>
 </form>
