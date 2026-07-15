@@ -3,9 +3,9 @@
 {# Included with oob=True in HTMX item-action responses so the submit button enables as soon as the last required item completes. #}
 <div id="folder-actions" {% if oob %}hx-swap-oob="true"{% endif %}
      hx-get="{% url 'folder_status' course.pk %}?status={{ folder.status }}"
-     hx-trigger="every 30s"
+     hx-trigger="every 30s, pollnow"
      hx-swap="none"
-     class="mt-4 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+     class="js-poll-on-focus mt-4 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
   {% if folder.status == 'DRAFT' %}
     {% if folder.mid_return_note %}
       <div class="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">

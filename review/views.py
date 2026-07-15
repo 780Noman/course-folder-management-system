@@ -1,10 +1,12 @@
 """Review workflow views: faculty submissions and admin review."""
 
+import hashlib
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -56,6 +58,16 @@ def submit_final(request, course_id):
 AWAITING_REVIEW = (FolderStatus.MID_SUBMITTED, FolderStatus.FINAL_SUBMITTED)
 
 
+def _queue_signature(pairs):
+    """A stable fingerprint of the awaiting-review set (id + status).
+
+    Changes when a folder enters the queue (new submission) or leaves it (after
+    review), so the queue page can tell whether it needs to reload.
+    """
+    raw = ";".join(f"{pk}:{status}" for pk, status in sorted(pairs))
+    return hashlib.md5(raw.encode()).hexdigest()[:12]
+
+
 @admin_required
 def review_list(request):
     """Admin queue of folders awaiting review."""
@@ -64,7 +76,29 @@ def review_list(request):
         .select_related("course__instructor", "course__term")
         .order_by("-course__term__year", "course__code")
     )
-    return render(request, "review/review_list.html", {"folders": folders})
+    queue_sig = _queue_signature(folders.values_list("id", "status"))
+    return render(
+        request, "review/review_list.html",
+        {"folders": folders, "queue_sig": queue_sig},
+    )
+
+
+@admin_required
+def review_queue_status(request):
+    """Lightweight poll target for the review queue.
+
+    Answers HX-Refresh when the awaiting-review set has changed since the page
+    was rendered (a new submission arrived, or a folder was reviewed), so the
+    open queue reloads itself without a manual refresh. Otherwise 204.
+    """
+    pairs = CourseFolder.objects.filter(status__in=AWAITING_REVIEW).values_list(
+        "id", "status"
+    )
+    if request.GET.get("sig") != _queue_signature(pairs):
+        response = HttpResponse(status=200)
+        response["HX-Refresh"] = "true"
+        return response
+    return HttpResponse(status=204)
 
 
 def _build_review_sections(folder):

@@ -44,5 +44,23 @@
 
     {% if request.user.is_authenticated %}{% include "partials/_footer.html" %}{% endif %}
   {% endblock %}
+
+  {# Re-check server state when the user returns to this tab, so the other party's #}
+  {# change (submit / approve / certify) shows without a manual refresh. Background #}
+  {# tabs throttle the timer poll, so fire an immediate poll on focus/visibility. #}
+  <script>
+    (function () {
+      function pollNow() {
+        if (!window.htmx) return;
+        document.querySelectorAll('.js-poll-on-focus').forEach(function (el) {
+          htmx.trigger(el, 'pollnow');
+        });
+      }
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) pollNow();
+      });
+      window.addEventListener('focus', pollNow);
+    })();
+  </script>
 </body>
 </html>

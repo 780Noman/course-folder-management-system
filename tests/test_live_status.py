@@ -67,6 +67,55 @@ def test_folder_page_contains_polling_panel(faculty_client, course):
     assert 'id="folder-actions"' in body
     assert reverse("folder_status", args=[course.pk]) in body
     assert "every 30s" in body
+    # Also refreshes the instant the tab regains focus (not only on the timer).
+    assert "pollnow" in body
+    assert "js-poll-on-focus" in body
+
+
+# --- Admin review queue live-refresh -----------------------------------------
+
+@pytest.mark.django_db
+def test_review_queue_poll_quiet_when_unchanged(admin_client, course):
+    from review.views import _queue_signature
+
+    pairs = CourseFolder.objects.filter(
+        status__in=(FolderStatus.MID_SUBMITTED, FolderStatus.FINAL_SUBMITTED)
+    ).values_list("id", "status")
+    resp = admin_client.get(
+        reverse("review_queue_status") + f"?sig={_queue_signature(pairs)}"
+    )
+    assert resp.status_code == 204
+    assert "HX-Refresh" not in resp
+
+
+@pytest.mark.django_db
+def test_review_queue_poll_refreshes_when_submission_arrives(admin_client, course):
+    from review.views import _queue_signature
+
+    empty_sig = _queue_signature([])  # queue was empty when the page rendered
+    folder = course.folder
+    folder.status = FolderStatus.MID_SUBMITTED
+    folder.save(update_fields=["status"])
+
+    resp = admin_client.get(reverse("review_queue_status") + f"?sig={empty_sig}")
+    assert resp.status_code == 200
+    assert resp["HX-Refresh"] == "true"
+
+
+@pytest.mark.django_db
+def test_review_queue_poll_admin_only(faculty_client):
+    resp = faculty_client.get(reverse("review_queue_status") + "?sig=x")
+    assert resp.status_code in (302, 403)
+
+
+@pytest.mark.django_db
+def test_review_list_contains_poller(admin_client, course):
+    folder = course.folder
+    folder.status = FolderStatus.MID_SUBMITTED
+    folder.save(update_fields=["status"])
+    body = admin_client.get(reverse("review_list")).content.decode()
+    assert reverse("review_queue_status") in body
+    assert "js-poll-on-focus" in body
 
 
 # --- Out-of-band action panel on item actions --------------------------------

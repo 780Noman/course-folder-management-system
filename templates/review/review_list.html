@@ -3,6 +3,13 @@
 {% block title %}Review queue &middot; Course Folder Management System{% endblock %}
 
 {% block content %}
+  {# Reloads the queue when a submission arrives or a folder is reviewed, on the #}
+  {# 30s tick or the instant the admin returns to this tab. #}
+  <div class="js-poll-on-focus hidden"
+       hx-get="{% url 'review_queue_status' %}?sig={{ queue_sig }}"
+       hx-trigger="every 30s, pollnow"
+       hx-swap="none"></div>
+
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-semibold tracking-tight text-gray-900">Review queue</h1>
