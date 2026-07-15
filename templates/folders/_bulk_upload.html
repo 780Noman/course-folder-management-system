@@ -280,17 +280,18 @@
           if (f.size > this.maxBytes) { skipped.push({ name: f.name, reason: 'over {{ max_upload_mb }} MB' }); continue; }
 
           const slot = map[item.pk] = map[item.pk] || { plain: [], WORST: [], AVERAGE: [], BEST: [], manual: 0, already: 0, folderName: ancestors[idx] };
+          const fname = (f.name || '').trim().toLowerCase();
           if (item.allows_samples) {
             // Prefer a W/A/B subfolder; else infer the group from the filename;
             // otherwise leave the file for manual assignment.
             const wab = (ancestors[idx + 1] ? this.wabKind(ancestors[idx + 1]) : null)
                         || this.wabFromName(f.name);
-            if (!wab) slot.manual++;
-            else if ((item.filled_groups || []).includes(wab)) slot.already++;  // group already on server -> skip
-            else slot[wab].push(f);
+            if (!wab) { slot.manual++; }
+            else if (((item.existing_groups || {})[wab] || []).includes(fname)) { slot.already++; }  // same file already in this group -> skip
+            else { slot[wab].push(f); }
           } else {
-            if (item.filled) slot.already++;      // item already has a file on the server -> skip
-            else slot.plain.push(f);
+            if ((item.existing || []).includes(fname)) { slot.already++; }   // same file already uploaded -> skip
+            else { slot.plain.push(f); }
           }
         }
 
@@ -299,8 +300,8 @@
           const s = map[i.pk];
           // Whether the item is already complete on the server (nothing to add).
           const serverDone = i.allows_samples
-            ? ['WORST', 'AVERAGE', 'BEST'].every(k => (i.filled_groups || []).includes(k))
-            : !!i.filled;
+            ? ['WORST', 'AVERAGE', 'BEST'].every(k => ((i.existing_groups || {})[k] || []).length > 0)
+            : (i.existing || []).length > 0;
           let count = 0, status = 'missing', label = 'Missing';
           if (s) {
             if (i.allows_samples) {
@@ -374,17 +375,24 @@
           fd.append('csrfmiddlewaretoken', this.csrf);
           if (t.kind) fd.append('sample_kind', t.kind);
           for (const f of t.files) fd.append('file', f, f.name);
-          try {
-            const resp = await fetch(t.url, {
-              method: 'POST', body: fd,
-              headers: { 'HX-Request': 'true', 'X-CSRFToken': this.csrf },
-              credentials: 'same-origin',
-            });
-            if (resp.ok) { this.okFiles += t.files.length; }
-            else { this.failed.push(t.label + ' (server error ' + resp.status + ')'); }
-          } catch (err) {
-            this.failed.push(t.label + ' (network error)');
+          // Retry once on a transient network error (not on a server response).
+          let resp = null, networkError = false;
+          for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+              resp = await fetch(t.url, {
+                method: 'POST', body: fd,
+                headers: { 'HX-Request': 'true', 'X-CSRFToken': this.csrf },
+                credentials: 'same-origin',
+              });
+              networkError = false;
+              break;
+            } catch (err) {
+              networkError = true;   // connection dropped — try again
+            }
           }
+          if (networkError) { this.failed.push(t.label + ' (network error — please retry)'); }
+          else if (resp.ok) { this.okFiles += t.files.length; }
+          else { this.failed.push(t.label + ' (server error ' + resp.status + ')'); }
           this.progress.done++;
         }
         this.stage = 'done';

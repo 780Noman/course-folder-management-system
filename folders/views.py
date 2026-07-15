@@ -118,20 +118,24 @@ def folder_detail(request, course_id):
         bulk_items = []
         for i in items:
             # files are prefetched, so this adds no queries.
-            kinds = {f.sample_kind for f in i.files.all()}
-            bulk_items.append({
+            entry = {
                 "pk": i.pk,
                 "order": i.order,
                 "title": i.title,
                 "allows_samples": i.allows_samples,
                 "upload_url": reverse("file_upload", args=[i.pk]),
-                # Current server state so the bulk panel can skip items / W-A-B
-                # groups that are already filled and never create duplicates.
-                "filled": bool(i.files.all()),
-                "filled_groups": sorted(
-                    k for k in kinds if k in {"WORST", "AVERAGE", "BEST"}
-                ),
-            })
+            }
+            # Names already uploaded, so the bulk panel re-uploads only genuinely
+            # new files (skips exact duplicates) and never doubles a file.
+            if i.allows_samples:
+                groups = {"WORST": [], "AVERAGE": [], "BEST": []}
+                for f in i.files.all():
+                    if f.sample_kind in groups:
+                        groups[f.sample_kind].append(f.original_name.lower())
+                entry["existing_groups"] = groups
+            else:
+                entry["existing"] = [f.original_name.lower() for f in i.files.all()]
+            bulk_items.append(entry)
 
     return render(
         request,

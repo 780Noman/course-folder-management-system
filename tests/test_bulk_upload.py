@@ -114,27 +114,42 @@ def test_single_file_still_works(faculty_client, course):
 
 
 @pytest.mark.django_db
-def test_bulk_items_report_server_fill_state(faculty_client, course):
-    """The bulk panel gets each item's current fill state so it can skip
-    already-uploaded items/groups and never create duplicates."""
+def test_bulk_items_report_existing_filenames(faculty_client, course):
+    """The bulk panel gets existing filenames so it re-uploads only genuinely
+    new files (skips exact duplicates) and never doubles a file."""
     url = reverse("folder_detail", args=[course.pk])
 
     entry = next(b for b in faculty_client.get(url).context["bulk_items"] if b["order"] == 1)
-    assert entry["filled"] is False
+    assert entry["existing"] == []
 
     item = course.folder.items.get(order=1)
-    faculty_client.post(reverse("file_upload", args=[item.pk]), {"file": _pdf("a.pdf")})
+    faculty_client.post(reverse("file_upload", args=[item.pk]), {"file": _pdf("A.pdf")})
     entry = next(b for b in faculty_client.get(url).context["bulk_items"] if b["order"] == 1)
-    assert entry["filled"] is True
+    assert entry["existing"] == ["a.pdf"]  # lowercased for case-insensitive matching
 
-    # Sample item: filled_groups lists only the W/A/B groups already present.
+    # Sample item: existing names are reported per W/A/B group.
     sample = course.folder.items.get(order=11)
     faculty_client.post(
         reverse("file_upload", args=[sample.pk]),
-        {"file": _pdf("w.pdf"), "sample_kind": SampleKind.WORST},
+        {"file": _pdf("w1.pdf"), "sample_kind": SampleKind.WORST},
     )
     s = next(b for b in faculty_client.get(url).context["bulk_items"] if b["order"] == 11)
-    assert s["filled_groups"] == ["WORST"]
+    assert s["existing_groups"]["WORST"] == ["w1.pdf"]
+    assert s["existing_groups"]["AVERAGE"] == []
+
+
+@pytest.mark.django_db
+def test_multi_file_manual_upload_appends(faculty_client, course):
+    """Faculty can add several files to an item at once (manual multi-select),
+    and adding more later appends rather than replacing."""
+    item = course.folder.items.get(order=1)
+    url = reverse("file_upload", args=[item.pk])
+
+    faculty_client.post(url, {"file": [_pdf("one.pdf"), _pdf("two.pdf")]})
+    assert ItemFile.objects.filter(item=item).count() == 2
+
+    faculty_client.post(url, {"file": _pdf("three.pdf")})
+    assert ItemFile.objects.filter(item=item).count() == 3
 
 
 @pytest.mark.django_db

@@ -129,6 +129,10 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 # short-lived signed URLs; otherwise they fall back to a private local
 # directory served through an access-controlled view (never a public URL).
 MAX_UPLOAD_MB = env("MAX_UPLOAD_MB")
+# A whole subfolder can hold many files (e.g. lecture notes); the bulk-upload
+# panel posts one item folder / sample group per request, so raise Django's
+# default 100-file guard well above any realistic single item.
+DATA_UPLOAD_MAX_NUMBER_FILES = env.int("DATA_UPLOAD_MAX_NUMBER_FILES", default=500)
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "media/"  # not routed publicly; files are served via a guarded view
 SIGNED_URL_TTL = env.int("SIGNED_URL_TTL", default=300)  # seconds
