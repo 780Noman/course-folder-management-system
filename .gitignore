@@ -32,6 +32,8 @@ db.sqlite3
 
 # Local test data: real course folders with student records — never publish
 /docs/BS-CS-3C-Mor-AI/
+# Generated demo course folder (dummy test PDFs for local bulk-upload testing)
+/demo-course-folder/
 
 # Tooling
 .pytest_cache/
