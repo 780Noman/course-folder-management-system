@@ -42,6 +42,9 @@
           <span class="font-medium" x-text="matchedCount"></span> item(s) matched,
           <span class="font-medium text-destructive" x-text="missingCount"></span> missing.
           <span x-text="uploadableCount"></span> file(s) ready to upload.
+          <span x-show="alreadyCount" class="text-muted-foreground">
+            <span x-text="alreadyCount"></span> already uploaded (skipped to avoid duplicates).
+          </span>
         </p>
 
         <div class="mt-3 overflow-x-auto rounded-md border border-border">
@@ -67,7 +70,8 @@
                           :class="{
                             'bg-green-100 text-green-800': r.status === 'matched',
                             'bg-amber-100 text-amber-800': r.status === 'manual' || r.status === 'partial',
-                            'bg-destructive/10 text-destructive': r.status === 'missing'
+                            'bg-destructive/10 text-destructive': r.status === 'missing',
+                            'bg-muted text-muted-foreground': r.status === 'already'
                           }"
                           x-text="r.label"></span>
                   </td>
@@ -275,21 +279,28 @@
           if (f.size === 0) { skipped.push({ name: f.name, reason: 'empty file' }); continue; }
           if (f.size > this.maxBytes) { skipped.push({ name: f.name, reason: 'over {{ max_upload_mb }} MB' }); continue; }
 
-          const slot = map[item.pk] = map[item.pk] || { plain: [], WORST: [], AVERAGE: [], BEST: [], manual: 0, folderName: ancestors[idx] };
+          const slot = map[item.pk] = map[item.pk] || { plain: [], WORST: [], AVERAGE: [], BEST: [], manual: 0, already: 0, folderName: ancestors[idx] };
           if (item.allows_samples) {
             // Prefer a W/A/B subfolder; else infer the group from the filename;
             // otherwise leave the file for manual assignment.
             const wab = (ancestors[idx + 1] ? this.wabKind(ancestors[idx + 1]) : null)
                         || this.wabFromName(f.name);
-            if (wab) slot[wab].push(f); else slot.manual++;
+            if (!wab) slot.manual++;
+            else if ((item.filled_groups || []).includes(wab)) slot.already++;  // group already on server -> skip
+            else slot[wab].push(f);
           } else {
-            slot.plain.push(f);
+            if (item.filled) slot.already++;      // item already has a file on the server -> skip
+            else slot.plain.push(f);
           }
         }
 
         // A row for EVERY checklist item so missing ones are visible (red).
         this.rows = this.items.map(i => {
           const s = map[i.pk];
+          // Whether the item is already complete on the server (nothing to add).
+          const serverDone = i.allows_samples
+            ? ['WORST', 'AVERAGE', 'BEST'].every(k => (i.filled_groups || []).includes(k))
+            : !!i.filled;
           let count = 0, status = 'missing', label = 'Missing';
           if (s) {
             if (i.allows_samples) {
@@ -297,11 +308,16 @@
               if (count > 0 && s.manual > 0) { status = 'partial'; label = 'Matched (+' + s.manual + ' need W/A/B)'; }
               else if (count > 0) { status = 'matched'; label = 'Matched'; }
               else if (s.manual > 0) { status = 'manual'; label = s.manual + ' file(s) — assign W/A/B manually'; }
+              else if (s.already > 0) { status = 'already'; label = 'Already uploaded — skipped'; }
             } else {
               count = s.plain.length;
               if (count > 0) { status = 'matched'; label = 'Matched'; }
+              else if (s.already > 0) { status = 'already'; label = 'Already uploaded — skipped'; }
             }
           }
+          // Complete on the server with nothing new to upload: show as done, even
+          // if this folder had no subfolder for it (e.g. re-uploading only Final).
+          if (count === 0 && serverDone) { status = 'already'; label = 'Already uploaded'; }
           return {
             pk: i.pk, order: i.order, title: i.title, allows_samples: i.allows_samples,
             folderName: s ? s.folderName : '', count, status, label,
@@ -316,6 +332,7 @@
 
       get matchedCount() { return this.rows.filter(r => r.status === 'matched' || r.status === 'partial').length; },
       get missingCount() { return this.rows.filter(r => r.status === 'missing').length; },
+      get alreadyCount() { return this.rows.filter(r => r.status === 'already').length; },
       get uploadableCount() {
         let n = 0;
         for (const r of this.rows) {

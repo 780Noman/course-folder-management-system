@@ -114,6 +114,30 @@ def test_single_file_still_works(faculty_client, course):
 
 
 @pytest.mark.django_db
+def test_bulk_items_report_server_fill_state(faculty_client, course):
+    """The bulk panel gets each item's current fill state so it can skip
+    already-uploaded items/groups and never create duplicates."""
+    url = reverse("folder_detail", args=[course.pk])
+
+    entry = next(b for b in faculty_client.get(url).context["bulk_items"] if b["order"] == 1)
+    assert entry["filled"] is False
+
+    item = course.folder.items.get(order=1)
+    faculty_client.post(reverse("file_upload", args=[item.pk]), {"file": _pdf("a.pdf")})
+    entry = next(b for b in faculty_client.get(url).context["bulk_items"] if b["order"] == 1)
+    assert entry["filled"] is True
+
+    # Sample item: filled_groups lists only the W/A/B groups already present.
+    sample = course.folder.items.get(order=11)
+    faculty_client.post(
+        reverse("file_upload", args=[sample.pk]),
+        {"file": _pdf("w.pdf"), "sample_kind": SampleKind.WORST},
+    )
+    s = next(b for b in faculty_client.get(url).context["bulk_items"] if b["order"] == 11)
+    assert s["filled_groups"] == ["WORST"]
+
+
+@pytest.mark.django_db
 def test_sample_item_without_kind_is_rejected(faculty_client, course):
     item = course.folder.items.get(order=11)  # sample item
     resp = faculty_client.post(

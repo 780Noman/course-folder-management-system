@@ -115,16 +115,23 @@ def folder_detail(request, course_id):
     # Compact list the bulk-upload panel maps local subfolders onto (owner only).
     bulk_items = None
     if is_owner:
-        bulk_items = [
-            {
+        bulk_items = []
+        for i in items:
+            # files are prefetched, so this adds no queries.
+            kinds = {f.sample_kind for f in i.files.all()}
+            bulk_items.append({
                 "pk": i.pk,
                 "order": i.order,
                 "title": i.title,
                 "allows_samples": i.allows_samples,
                 "upload_url": reverse("file_upload", args=[i.pk]),
-            }
-            for i in items
-        ]
+                # Current server state so the bulk panel can skip items / W-A-B
+                # groups that are already filled and never create duplicates.
+                "filled": bool(i.files.all()),
+                "filled_groups": sorted(
+                    k for k in kinds if k in {"WORST", "AVERAGE", "BEST"}
+                ),
+            })
 
     return render(
         request,
