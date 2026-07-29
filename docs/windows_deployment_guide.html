@@ -288,10 +288,63 @@ without anyone signing in.</div>
 plus <code>_media</code>.) A fuller routine is in <code>docs/BACKUPS.md</code>.</p>
 
 <h2>Step 15 - Updating to a newer version later</h2>
-<p>Bring the new code onto the server (download a fresh ZIP as in Step 5, or
-<code>git pull</code> if you used Git), then rebuild - your data is not touched:</p>
-<pre>cd C:\course-folder
-docker compose -f docker-compose.prod.yml up -d --build</pre>
+<p class="does">What this does: brings the newest code onto the server and restarts it.
+Your data - all accounts, passwords, uploaded documents, and issued certificates -
+lives in Docker volumes and is <strong>not touched</strong>. Migrations and static
+files are applied automatically on restart, so there is nothing else to run.</p>
+
+<h3>15.1 Before you start</h3>
+<ol>
+  <li>Make sure <strong>Docker Desktop</strong> is running (whale icon steady, <em>Engine running</em>).</li>
+  <li>Open <strong>PowerShell as Administrator</strong> and move into the app folder:</li>
+</ol>
+<pre>cd C:\course-folder</pre>
+
+<h3>15.2 Get the latest code (use the SAME method you installed with)</h3>
+<p><strong>Option A - if you installed with Git (simplest and safest):</strong></p>
+<pre>git pull</pre>
+<p class="does">This updates the code only; your <code>.env</code> settings file is left alone.</p>
+<div class="alt"><strong>Option B - if you installed from the ZIP (no Git):</strong>
+<pre># 1) Keep a safety copy of your settings file
+Copy-Item .\.env "$env:USERPROFILE\Downloads\env-backup.txt" -Force
+
+# 2) Download and unpack the latest code
+curl.exe -L "https://github.com/780Noman/course-folder-management-system/archive/refs/heads/main.zip" -o "$env:USERPROFILE\Downloads\app.zip"
+Expand-Archive "$env:USERPROFILE\Downloads\app.zip" -DestinationPath "$env:USERPROFILE\Downloads\app-new" -Force
+
+# 3) Copy the new files over your folder (your .env is NOT in the zip, so it stays)
+Copy-Item "$env:USERPROFILE\Downloads\app-new\course-folder-management-system-main\*" "C:\course-folder\" -Recurse -Force</pre></div>
+
+<h3>15.3 (Optional) Raise the upload limit to 100 MB</h3>
+<p>Only if your <code>.env</code> still says <code>MAX_UPLOAD_MB=50</code> and you want the
+larger limit (for PowerPoint / scanned files). Open it, change the line to
+<code>MAX_UPLOAD_MB=100</code>, save, and close:</p>
+<pre>notepad C:\course-folder\.env</pre>
+
+<h3>15.4 Rebuild and restart</h3>
+<pre>docker compose -f docker-compose.prod.yml up -d --build</pre>
+<p>This takes about 1-3 minutes. On start-up the system applies any database
+migrations and refreshes its files automatically - no other command is needed.</p>
+
+<h3>15.5 Check it worked</h3>
+<pre>docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs --tail=30 web</pre>
+<ul>
+  <li><code>ps</code>: both <code>db</code> and <code>web</code> should show <strong>Up</strong>.</li>
+  <li><code>logs</code>: you should see <em>"Running database migrations... Collecting static files..."</em>.</li>
+  <li>Open <code>http://YOUR-SERVER-IP:8000</code> in a browser, sign in, and confirm the new
+      features work (e.g. the <strong>"Bulk upload from a folder"</strong> panel on a course folder).</li>
+</ul>
+
+<div class="note"><strong>If something looks wrong (rollback).</strong> Your data is safe in
+the volumes. To go back to the previous code: with Git run <code>git checkout</code> of the
+earlier version and rebuild (Step 15.4); with the ZIP, unpack the previous version and
+rebuild. Nothing is lost.</div>
+
+<div class="warn"><strong>Do not delete the <code>C:\course-folder</code> folder or the
+<code>.env</code> file,</strong> and do not run <code>docker compose down -v</code> - the
+<code>-v</code> flag would erase the database and uploaded files. A plain
+<code>up -d --build</code> never touches your data.</div>
 
 <h2>Step 16 - If something goes wrong</h2>
 <table>
