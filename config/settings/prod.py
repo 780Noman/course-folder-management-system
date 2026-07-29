@@ -15,9 +15,17 @@ DEBUG = False
 # Fails fast if these are not provided by the environment.
 SECRET_KEY = env("SECRET_KEY")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
+# The server can always reach itself locally; allow localhost so opening the
+# site on the server machine (or an on-box health check) doesn't fail the host
+# check. External clients still must use a host listed in ALLOWED_HOSTS.
+for _local in ("localhost", "127.0.0.1"):
+    if _local not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_local)
 
-# Hosts/origins trusted for cross-site POSTs (needed for forms over plain HTTP on
-# an internal server, e.g. CSRF_TRUSTED_ORIGINS=http://192.168.1.50:8000).
+# Hosts/origins trusted for cross-site POSTs (login/forms). Starts from the env
+# value; on an internal HTTP server we also auto-trust each allowed host on the
+# app's port (see below), so forms work whether the site is opened by IP or by
+# localhost without hand-maintaining this list.
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 # --- Cache (must be process-shared) -----------------------------------------
@@ -59,6 +67,15 @@ if ENABLE_HTTPS:
     SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+else:
+    # Internal plain-HTTP LAN server: trust every allowed host on the app's port
+    # for cross-site POSTs, so login/forms work by IP or by localhost without
+    # hand-editing CSRF_TRUSTED_ORIGINS. (Only http, and only when HTTPS is off.)
+    _app_port = env("APP_PORT", default="8000")
+    for _host in ALLOWED_HOSTS:
+        _origin = f"http://{_host}:{_app_port}"
+        if _origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(_origin)
 
 # --- Logging -----------------------------------------------------------------
 # Django's default prod logging drops errors (console handler is debug-only and
