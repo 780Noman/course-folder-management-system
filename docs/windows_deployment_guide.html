@@ -113,14 +113,41 @@ Invoke-WebRequest -Uri "https://desktop.docker.com/win/main/amd64/Docker%20Deskt
 <div class="alt"><strong>Alternative - silent install (no clicking):</strong>
 <pre>Start-Process "$env:USERPROFILE\Downloads\DockerInstaller.exe" -Wait -ArgumentList "install","--quiet","--accept-license"</pre></div>
 
-<h3>4.3 Start Docker and make it auto-run</h3>
+<h3>4.3 Start Docker and make the server come back by itself</h3>
 <ol>
   <li>Open <strong>Docker Desktop</strong> from Start. Accept the terms.</li>
   <li>Wait until it says <strong>Engine running</strong> (the whale icon in the tray is steady).</li>
   <li>Open <strong>Settings (gear)</strong> -&gt; <strong>General</strong> -&gt; tick
-      <strong>Start Docker Desktop when you sign in</strong> (so the server restarts
-      by itself after a power cut).</li>
+      <strong>Start Docker Desktop when you sign in</strong>.</li>
 </ol>
+<p>With that ticked, and because the app already uses Docker's <code>restart: unless-stopped</code>
+setting, the server starts again on its own whenever Windows is signed in - after a normal
+restart or a power cut. No command is needed.</p>
+
+<p><strong>Make it fully automatic (no password typed on power-on).</strong> Docker Desktop only
+starts <em>after someone signs in to Windows</em>. So the machine can sign in by itself, turn on
+Windows automatic sign-in for the server account:</p>
+<ol>
+  <li>Use a <strong>local</strong> Windows account for the server (not a Microsoft account) if possible.</li>
+  <li>Press <code>Win + R</code>, type <code>netplwiz</code>, press <strong>Enter</strong>.</li>
+  <li>Select the account, <strong>untick</strong> "Users must enter a user name and password to use
+      this computer", click <strong>Apply</strong>.</li>
+  <li>Type the account password twice, click <strong>OK</strong>.</li>
+</ol>
+<div class="alt"><strong>If that checkbox is missing:</strong> open
+<strong>Settings -&gt; Accounts -&gt; Sign-in options</strong>, turn <strong>off</strong>
+"Require Windows Hello sign-in for Microsoft accounts", restart the computer, then try
+<code>netplwiz</code> again.</div>
+
+<div class="note"><strong>After a power cut or a restart:</strong> just switch the machine on.
+Windows signs in by itself, Docker Desktop starts, and the server comes back - <strong>wait about
+1-2 minutes</strong> for Docker to finish starting, then <code>http://YOUR-SERVER-IP:8000</code>
+works again. If it is ever still down, open PowerShell and run:
+<pre>cd C:\course-folder
+docker compose -f docker-compose.prod.yml up -d</pre></div>
+
+<div class="warn"><strong>Security note:</strong> automatic sign-in means anyone who powers this
+machine on gets a signed-in Windows session - keep the server in a locked room.</div>
 
 <h3>4.4 Check Docker works</h3>
 <pre>docker --version
