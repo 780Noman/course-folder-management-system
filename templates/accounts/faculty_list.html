@@ -55,7 +55,11 @@
               {% endif %}
             </td>
             <td class="px-4 py-3">
-              <div class="flex items-center justify-end gap-2">
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <a href="{% url 'faculty_edit' member.pk %}"
+                   class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                  Edit
+                </a>
                 <a href="{% url 'faculty_set_password' member.pk %}"
                    class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
                   Reset password
@@ -68,6 +72,10 @@
                     {% if member.is_active %}Deactivate{% else %}Reactivate{% endif %}
                   </button>
                 </form>
+                <a href="{% url 'faculty_delete' member.pk %}"
+                   class="cursor-pointer rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                  Delete
+                </a>
               </div>
             </td>
           </tr>

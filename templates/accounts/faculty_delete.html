@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Delete faculty &middot; Course Folder Management System{% endblock %}
+
+{% block content %}
+  <div class="mx-auto max-w-lg">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-semibold tracking-tight text-gray-900">Delete faculty</h1>
+      <a href="{% url 'faculty_list' %}"
+         class="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-900">&larr; Back</a>
+    </div>
+    <p class="mt-1 text-sm text-gray-600">
+      <span class="font-medium text-gray-900">{{ member.name }}</span> ({{ member.email }})
+    </p>
+
+    <div class="mt-4 rounded-lg border border-gray-200 bg-white p-5 text-sm shadow-sm">
+      <p class="font-medium text-gray-900">On record for this member</p>
+      <ul class="mt-2 space-y-1 text-gray-700">
+        <li>{{ course_count }} course{{ course_count|pluralize }}</li>
+        <li>{{ folder_count }} course folder{{ folder_count|pluralize }}</li>
+        <li>{{ file_count }} uploaded file{{ file_count|pluralize }}</li>
+        <li>{{ cert_count }} issued certificate{{ cert_count|pluralize }}</li>
+      </ul>
+    </div>
+
+    {% if can_hard_delete %}
+      <div class="mt-4 rounded-lg border border-red-200 bg-red-50 p-5 shadow-sm">
+        <p class="text-sm text-red-800">
+          This member has no linked records, so deletion is safe and permanent.
+          Prefer <span class="font-medium">Deactivate</span> if you might restore them later.
+        </p>
+        <form method="post" class="mt-4 space-y-3">
+          {% csrf_token %}
+          <div>
+            <label for="confirm" class="block text-sm font-medium text-gray-700">
+              Type <span class="font-mono font-semibold">DELETE</span> to confirm
+            </label>
+            <input type="text" name="confirm" id="confirm" autocomplete="off"
+                   class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-red-600 focus:outline-none focus:ring-1 focus:ring-red-600">
+          </div>
+          <button type="submit"
+                  class="w-full cursor-pointer rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+            Permanently delete
+          </button>
+        </form>
+      </div>
+    {% else %}
+      <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-5 shadow-sm">
+        <p class="text-sm text-amber-900">
+          This member has course history, so they <span class="font-medium">cannot be
+          permanently deleted</span> — that would erase their folders and certificates.
+          Deactivate them instead to keep the record intact, or reassign their courses first.
+        </p>
+        <form method="post" action="{% url 'faculty_set_active' member.pk %}" class="mt-4">
+          {% csrf_token %}
+          <button type="submit"
+                  class="w-full cursor-pointer rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+            Deactivate {{ member.name }} instead
+          </button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

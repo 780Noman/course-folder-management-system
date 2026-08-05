@@ -62,6 +62,34 @@ class InviteForm(forms.ModelForm):
         return cleaned
 
 
+class UserEditForm(forms.ModelForm):
+    """Edit a user's display name and login email.
+
+    Admin-only in practice (used both for the admin's own profile and for
+    editing any faculty member); faculty never reach an email-editing form.
+    Email is stored/compared case-insensitively so an edit can't create a
+    near-duplicate account.
+    """
+
+    class Meta:
+        model = User
+        fields = ("name", "email")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", _WIDGET_CLASSES)
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        qs = User.objects.filter(email__iexact=email)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError("A user with this email already exists.")
+        return email
+
+
 class SetUserPasswordForm(forms.Form):
     """Admin sets/resets an existing user's password (offline password recovery).
 

@@ -13,12 +13,13 @@
     </a>
 
     <div class="flex items-center gap-3">
-      <span class="hidden text-sm text-muted-foreground sm:block">
+      <a href="{% url 'profile' %}"
+         class="hidden items-center text-sm text-muted-foreground hover:text-foreground sm:flex cursor-pointer rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
         {{ request.user.name }}
         <span class="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-strong">
           {% if request.user.is_admin %}Focal Person{% else %}Faculty{% endif %}
         </span>
-      </span>
+      </a>
       <a href="{% url 'password_change' %}"
          class="cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
         Change password

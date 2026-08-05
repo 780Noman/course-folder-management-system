@@ -58,8 +58,20 @@ urlpatterns = [
     path("dashboard/", views.dashboard_redirect, name="dashboard"),
     path("dashboard/admin/", views.admin_dashboard, name="admin_dashboard"),
     path("dashboard/faculty/", views.faculty_dashboard, name="faculty_dashboard"),
+    # Own account (admins may edit their email; faculty see it read-only)
+    path("account/", views.profile, name="profile"),
     # Faculty management / invites
     path("manage/faculty/", views.faculty_list, name="faculty_list"),
+    path(
+        "manage/faculty/<int:pk>/edit/",
+        views.faculty_edit,
+        name="faculty_edit",
+    ),
+    path(
+        "manage/faculty/<int:pk>/delete/",
+        views.faculty_delete,
+        name="faculty_delete",
+    ),
     path(
         "manage/faculty/<int:pk>/set-active/",
         views.faculty_set_active,
