@@ -6,6 +6,7 @@ from django.test import Client
 from django.urls import reverse
 
 from accounts.models import User
+from audit.models import AuditLog
 from accounts.password_vault import (
     clear_admin_password,
     generate_password,
@@ -69,6 +70,29 @@ def test_generate_is_admin_only(faculty_client, faculty_user):
     assert faculty_client.post(
         reverse("faculty_generate_password", args=[faculty_user.pk])
     ).status_code == 403
+
+
+def test_cannot_target_another_admin(admin_client, admin_user):
+    # The vault endpoints are scoped to faculty; they must not act on an admin
+    # (no admin-to-admin password takeover).
+    assert admin_client.get(
+        reverse("faculty_set_password", args=[admin_user.pk])
+    ).status_code == 404
+    assert admin_client.post(
+        reverse("faculty_set_password", args=[admin_user.pk]),
+        {"password": "Whatever123!"},
+    ).status_code == 404
+    assert admin_client.post(
+        reverse("faculty_generate_password", args=[admin_user.pk])
+    ).status_code == 404
+
+
+def test_reveal_is_audited(admin_client, faculty_user):
+    set_admin_password(faculty_user, "Visible123!")
+    admin_client.get(reverse("faculty_set_password", args=[faculty_user.pk]))
+    assert AuditLog.objects.filter(
+        action="user_reveal_password", target_id=str(faculty_user.pk)
+    ).exists()
 
 
 def test_invite_stores_viewable_password(admin_client):

@@ -15,6 +15,11 @@ Pillow~=12.2  # >=12.2.0 fixes CVE-2026-40192/42309/42310/42311, PYSEC-2026-165
 # Frontend interactivity
 django-htmx~=1.21
 
+# Symmetric encryption for the admin-viewable password copy (accounts.password_vault).
+# Imported directly at startup, so declared explicitly rather than relying on it
+# arriving transitively via xhtml2pdf -> pyHanko.
+cryptography>=42.0
+
 # PDF certificate generation (HTML -> PDF)
 # WeasyPrint is the production engine (needs GTK; present in the Docker image).
 # xhtml2pdf is a pure-Python fallback for local dev/tests on Windows where GTK

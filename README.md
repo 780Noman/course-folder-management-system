@@ -81,6 +81,10 @@ For a throwaway focal-person login to try the system, run the idempotent
 (`tester@gmail.com` / `tester@123`) and never touches any other user — the real
 admin included. Re-run it any time to reset the demo password.
 
+> **Security note:** this is a well-known credential with full focal-person
+> access (but no Django `/admin/` access). Use it only for evaluation and
+> **remove the account afterwards**; do not leave it on a real deployment.
+
 ```bash
 python manage.py create_demo_admin          # local
 docker compose -f docker-compose.prod.yml exec web python manage.py create_demo_admin   # server

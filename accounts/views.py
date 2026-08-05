@@ -13,6 +13,7 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from audit.services import record
@@ -124,14 +125,17 @@ def invite_user(request):
 
 
 @admin_required
+@never_cache
 def faculty_set_password(request, pk):
-    """Admin password management for one user (offline recovery).
+    """Admin password management for one FACULTY member (offline recovery).
 
     Sets/resets a specific password and keeps an admin-viewable encrypted copy.
     The page also reveals the current admin-set password (if still available)
-    and offers a one-click random generate. Admin-only, enforced server-side.
+    and offers a one-click random generate. Scoped to faculty so it cannot be
+    turned on another admin; not cached so a revealed password is not left in
+    the browser's back/forward cache on a shared workstation.
     """
-    member = get_object_or_404(User, pk=pk)
+    member = get_object_or_404(User, pk=pk, role=User.Role.FACULTY)
     if request.method == "POST":
         form = SetUserPasswordForm(request.POST, user=member)
         if form.is_valid():
@@ -146,14 +150,14 @@ def faculty_set_password(request, pk):
             return redirect("faculty_set_password", pk=pk)
     else:
         form = SetUserPasswordForm(user=member)
+    revealed = reveal_admin_password(member)
+    # Auditing a sensitive read: log whenever a live password is shown to the admin.
+    if request.method == "GET" and revealed is not None:
+        record(request.user, "user_reveal_password", member, email=member.email)
     return render(
         request,
         "accounts/set_faculty_password.html",
-        {
-            "form": form,
-            "member": member,
-            "revealed_password": reveal_admin_password(member),
-        },
+        {"form": form, "member": member, "revealed_password": revealed},
     )
 
 
@@ -161,7 +165,7 @@ def faculty_set_password(request, pk):
 @require_POST
 def faculty_generate_password(request, pk):
     """Admin generates a strong random password and stores the viewable copy."""
-    member = get_object_or_404(User, pk=pk)
+    member = get_object_or_404(User, pk=pk, role=User.Role.FACULTY)
     raw = generate_password()
     with transaction.atomic():
         set_admin_password(member, raw)

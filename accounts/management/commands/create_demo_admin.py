@@ -30,8 +30,11 @@ class Command(BaseCommand):
                 "name": DEMO_NAME,
                 "role": User.Role.ADMIN,
                 "is_active": True,
-                "is_staff": True,
-                "is_superuser": True,
+                # App-level focal person only. Deliberately NOT is_staff /
+                # is_superuser: this is a well-known-credential demo account, so
+                # it must not carry a Django-admin (/admin/) backdoor.
+                "is_staff": False,
+                "is_superuser": False,
             },
         )
         # update_or_create can't hash the password, so set it explicitly. This
@@ -43,5 +46,12 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"{verb} demo admin {DEMO_EMAIL} (role=ADMIN, active, password reset)."
+            )
+        )
+        self.stdout.write(
+            self.style.WARNING(
+                "This account uses a well-known password and grants full focal-person "
+                "access. Remove it after evaluation (Faculty screen or Django admin) "
+                "and never leave it on a real production deployment."
             )
         )

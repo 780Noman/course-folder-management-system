@@ -18,6 +18,9 @@ def test_creates_active_admin_that_can_log_in():
     user = User.objects.get(email=DEMO_EMAIL)
     assert user.is_admin
     assert user.is_active
+    # App focal-person only — no Django /admin/ backdoor on a well-known credential.
+    assert not user.is_staff
+    assert not user.is_superuser
     # Password is usable and authenticates.
     assert authenticate(username=DEMO_EMAIL, password=DEMO_PASSWORD) == user
 
