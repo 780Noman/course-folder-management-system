@@ -57,11 +57,11 @@
             </td>
             <td class="px-4 py-3 text-xs">
               {% if member.password_status == 'SET_BY_ADMIN' %}
-                <span class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 font-medium text-blue-800">Set by admin</span>
+                <span class="inline-flex rounded-full bg-accent/10 px-2 py-0.5 font-medium text-accent">Set by admin</span>
               {% elif member.password_status == 'CHANGED_BY_FACULTY' %}
-                <span class="text-gray-600">Changed by faculty<br>on {{ member.password_changed_by_faculty_at|date:"d M Y" }}</span>
+                <span class="text-muted-foreground">Changed by faculty<br>on {{ member.password_changed_by_faculty_at|date:"d M Y" }}</span>
               {% else %}
-                <span class="text-gray-400">Not set</span>
+                <span class="text-muted-foreground">Not set</span>
               {% endif %}
             </td>
             <td class="px-4 py-3">
