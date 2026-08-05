@@ -1,7 +1,15 @@
 """Academic structure: terms and courses."""
 
 from django.conf import settings
+from django.core.validators import RegexValidator
 from django.db import models
+
+# Credit hours accept a plain number ("3") or the university's
+# total(theory-lab) form ("4(3-3)").
+credit_hours_validator = RegexValidator(
+    regex=r"^\d{1,2}(\(\d{1,2}-\d{1,2}\))?$",
+    message="Use a number like 3, or the format 4(3-3) — total(theory-lab).",
+)
 
 
 class Term(models.Model):
@@ -63,7 +71,12 @@ class Course(models.Model):
 
     title = models.CharField(max_length=200)
     code = models.CharField(max_length=30)
-    credit_hours = models.PositiveSmallIntegerField(default=3)
+    credit_hours = models.CharField(
+        max_length=12,
+        default="3",
+        validators=[credit_hours_validator],
+        help_text="e.g. 3 or 4(3-3) — total credits with (theory-lab).",
+    )
     program = models.CharField(max_length=100, help_text="e.g. BSCS, BSSE, BSIT")
     study_semester = models.PositiveSmallIntegerField(
         help_text="The program semester this course belongs to (1–8)."
