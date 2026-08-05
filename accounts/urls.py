@@ -1,20 +1,18 @@
 """Account / authentication URLs."""
 
 from django.contrib.auth import views as auth_views
-from django.urls import path, reverse_lazy
+from django.urls import path
 
 from . import views
 
 urlpatterns = [
     path("login/", views.RoleLoginView.as_view(), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
-    # Change password (logged-in users; the view is login-required)
+    # Change password (logged-in users; the view is login-required). The custom
+    # view also erases the admin-viewable password copy on a self-change.
     path(
         "password-change/",
-        auth_views.PasswordChangeView.as_view(
-            template_name="registration/password_change_form.html",
-            success_url=reverse_lazy("password_change_done"),
-        ),
+        views.SelfPasswordChangeView.as_view(),
         name="password_change",
     ),
     path(
@@ -81,6 +79,11 @@ urlpatterns = [
         "manage/faculty/<int:pk>/set-password/",
         views.faculty_set_password,
         name="faculty_set_password",
+    ),
+    path(
+        "manage/faculty/<int:pk>/generate-password/",
+        views.faculty_generate_password,
+        name="faculty_generate_password",
     ),
     path("manage/users/invite/", views.invite_user, name="invite_user"),
     path(

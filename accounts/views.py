@@ -3,7 +3,11 @@
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LoginView, PasswordResetConfirmView
+from django.contrib.auth.views import (
+    LoginView,
+    PasswordChangeView,
+    PasswordResetConfirmView,
+)
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, Q
@@ -17,6 +21,12 @@ from . import ratelimit
 from .emails import send_email_changed_notice
 from .forms import InviteForm, SetUserPasswordForm, UserEditForm
 from .models import User
+from .password_vault import (
+    clear_admin_password,
+    generate_password,
+    reveal_admin_password,
+    set_admin_password,
+)
 from .permissions import admin_required, faculty_required
 
 
@@ -93,9 +103,11 @@ def invite_user(request):
         form = InviteForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            user.set_password(form.cleaned_data["password"])
             with transaction.atomic():
                 user.save()
+                # Keep the admin-viewable copy so the focal person can read the
+                # starting password back to hand over.
+                set_admin_password(user, form.cleaned_data["password"])
                 record(
                     request.user, "user_invite", user,
                     email=user.email, role=user.role,
@@ -113,28 +125,67 @@ def invite_user(request):
 
 @admin_required
 def faculty_set_password(request, pk):
-    """Admin sets/resets a user's password (offline password recovery)."""
+    """Admin password management for one user (offline recovery).
+
+    Sets/resets a specific password and keeps an admin-viewable encrypted copy.
+    The page also reveals the current admin-set password (if still available)
+    and offers a one-click random generate. Admin-only, enforced server-side.
+    """
     member = get_object_or_404(User, pk=pk)
     if request.method == "POST":
         form = SetUserPasswordForm(request.POST, user=member)
         if form.is_valid():
             with transaction.atomic():
-                member.set_password(form.cleaned_data["password"])
-                member.save(update_fields=["password"])
+                set_admin_password(member, form.cleaned_data["password"])
                 record(request.user, "user_set_password", member, email=member.email)
             messages.success(
                 request,
                 f"Password reset for {member.name} ({member.email}). "
                 "Share it; they can change it after signing in.",
             )
-            return redirect("faculty_list")
+            return redirect("faculty_set_password", pk=pk)
     else:
         form = SetUserPasswordForm(user=member)
     return render(
         request,
         "accounts/set_faculty_password.html",
-        {"form": form, "member": member},
+        {
+            "form": form,
+            "member": member,
+            "revealed_password": reveal_admin_password(member),
+        },
     )
+
+
+@admin_required
+@require_POST
+def faculty_generate_password(request, pk):
+    """Admin generates a strong random password and stores the viewable copy."""
+    member = get_object_or_404(User, pk=pk)
+    raw = generate_password()
+    with transaction.atomic():
+        set_admin_password(member, raw)
+        record(request.user, "user_generate_password", member, email=member.email)
+    messages.success(
+        request,
+        f"A new password was generated for {member.name}. It is shown below — "
+        "share it with them.",
+    )
+    return redirect("faculty_set_password", pk=pk)
+
+
+class SelfPasswordChangeView(PasswordChangeView):
+    """A user changes their own password. On success, erase any admin-viewable
+    copy: once the faculty pick their own password, the admin can no longer see
+    it (only reset/generate a fresh one)."""
+
+    template_name = "registration/password_change_form.html"
+    success_url = reverse_lazy("password_change_done")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        clear_admin_password(self.request.user)
+        return response
 
 
 class InviteSetPasswordView(PasswordResetConfirmView):

@@ -60,6 +60,16 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     date_joined = models.DateTimeField(auto_now_add=True)
 
+    # --- Admin-viewable password copy (offline password recovery) ------------
+    # When the focal person sets or generates a faculty password, an encrypted
+    # copy is kept here (Fernet, key from the environment) so the admin can read
+    # it back and hand it over. It is erased the moment the faculty change their
+    # own password. Never a plaintext column; only ever written via
+    # accounts.password_vault. See CLAUDE.md §6.
+    admin_password_ciphertext = models.TextField(blank=True, default="")
+    password_set_by_admin_at = models.DateTimeField(null=True, blank=True)
+    password_changed_by_faculty_at = models.DateTimeField(null=True, blank=True)
+
     objects = UserManager()
 
     USERNAME_FIELD = "email"
@@ -70,6 +80,20 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.name} <{self.email}>"
+
+    class PasswordStatus(models.TextChoices):
+        NOT_SET = "NOT_SET", "Not set"
+        SET_BY_ADMIN = "SET_BY_ADMIN", "Set by admin"
+        CHANGED_BY_FACULTY = "CHANGED_BY_FACULTY", "Changed by faculty"
+
+    @property
+    def password_status(self):
+        """Where this user's current password came from (for the admin list)."""
+        if self.admin_password_ciphertext:
+            return self.PasswordStatus.SET_BY_ADMIN
+        if self.password_changed_by_faculty_at:
+            return self.PasswordStatus.CHANGED_BY_FACULTY
+        return self.PasswordStatus.NOT_SET
 
     @property
     def is_admin(self):

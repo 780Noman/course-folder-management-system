@@ -38,6 +38,7 @@
           <th class="px-4 py-3">Email</th>
           <th class="px-4 py-3">Courses</th>
           <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3">Password</th>
           <th class="px-4 py-3 text-right">Action</th>
         </tr>
       </thead>
@@ -54,6 +55,15 @@
                 <span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Inactive</span>
               {% endif %}
             </td>
+            <td class="px-4 py-3 text-xs">
+              {% if member.password_status == 'SET_BY_ADMIN' %}
+                <span class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 font-medium text-blue-800">Set by admin</span>
+              {% elif member.password_status == 'CHANGED_BY_FACULTY' %}
+                <span class="text-gray-600">Changed by faculty<br>on {{ member.password_changed_by_faculty_at|date:"d M Y" }}</span>
+              {% else %}
+                <span class="text-gray-400">Not set</span>
+              {% endif %}
+            </td>
             <td class="px-4 py-3">
               <div class="flex flex-wrap items-center justify-end gap-2">
                 <a href="{% url 'faculty_edit' member.pk %}"
@@ -62,7 +72,7 @@
                 </a>
                 <a href="{% url 'faculty_set_password' member.pk %}"
                    class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                  Reset password
+                  Password
                 </a>
                 <form method="post" action="{% url 'faculty_set_active' member.pk %}">
                   {% csrf_token %}
@@ -80,7 +90,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="5" class="px-4 py-6 text-center text-gray-500">No faculty found.</td></tr>
+          <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">No faculty found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

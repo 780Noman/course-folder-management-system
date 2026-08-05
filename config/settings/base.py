@@ -61,6 +61,12 @@ LOGOUT_REDIRECT_URL = "home"
 LOGIN_FAILURE_LIMIT = env.int("LOGIN_FAILURE_LIMIT", default=5)
 LOGIN_LOCKOUT_SECONDS = env.int("LOGIN_LOCKOUT_SECONDS", default=900)
 
+# Symmetric key (Fernet) for the admin-viewable copy of passwords the focal
+# person sets/generates for faculty (see accounts.password_vault). Optional: when
+# unset, a stable key is derived from SECRET_KEY so dev/tests work out of the box;
+# production may set an explicit PASSWORD_ENC_KEY to rotate independently.
+PASSWORD_ENC_KEY = env("PASSWORD_ENC_KEY", default="")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     # WhiteNoise serves static files directly; must sit right after security.

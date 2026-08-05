@@ -68,6 +68,14 @@ These rules are non-negotiable:
 - Templates: a base layout + reusable partials. HTMX targets partials.
 - Use Django's built-in auth and password hashing. Never store or email a raw
   password; invites use a single-use, expiring set-password link.
+  - **Documented exception (admin-set passwords):** on this offline LAN
+    deployment the focal person must be able to read back a password they set or
+    generated for a faculty member (there is no email to send a reset link). That
+    single value is kept as a **reversible copy encrypted at rest** (Fernet, key
+    from the environment) in `accounts.password_vault`, is **admin-only**, and is
+    **erased the moment the faculty change their own password**. This is the only
+    place a recoverable password exists; there is still no plaintext column, and
+    login auth continues to use Django's one-way hash.
 
 ## 6. Security rules (apply everywhere)
 
