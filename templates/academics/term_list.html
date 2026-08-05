@@ -73,16 +73,22 @@
                     <span class="text-xs text-gray-400">Past/Inactive</span>
                   {% endif %}
                 </td>
-                <td class="px-4 py-3 text-right">
-                  {% if not term.is_current %}
-                    <form method="post" action="{% url 'term_set_current' term.pk %}">
-                      {% csrf_token %}
-                      <button type="submit"
-                              class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                        Set current
-                      </button>
-                    </form>
-                  {% endif %}
+                <td class="px-4 py-3">
+                  <div class="flex items-center justify-end gap-2">
+                    <a href="{% url 'term_edit' term.pk %}"
+                       class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                      Edit
+                    </a>
+                    {% if not term.is_current %}
+                      <form method="post" action="{% url 'term_set_current' term.pk %}">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                          Set current
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
                 </td>
               </tr>
             {% empty %}

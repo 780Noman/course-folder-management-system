@@ -2,6 +2,7 @@
 
 import pytest
 from django.core import mail
+from django.test import Client
 from django.urls import reverse
 
 from academics.models import Course, Term
@@ -69,14 +70,18 @@ def test_faculty_cannot_reach_edit_endpoint(faculty_client, faculty_user):
     ).status_code == 403
 
 
-def test_changing_email_keeps_faculty_logged_in(admin_client, faculty_client, faculty_user):
-    # faculty_client is already authenticated; an admin email edit must not
-    # invalidate their session (email is not part of the session auth hash).
+def test_changing_email_keeps_faculty_logged_in(admin_client, faculty_user):
+    # The faculty is already authenticated (independent client); an admin email
+    # edit must not invalidate their session (email is not in the auth hash).
+    faculty = Client()
+    faculty.force_login(faculty_user)
     admin_client.post(
         reverse("faculty_edit", args=[faculty_user.pk]),
         {"name": faculty_user.name, "email": "still.here@uiit.edu.pk"},
     )
-    resp = faculty_client.get(reverse("faculty_dashboard"))
+    faculty_user.refresh_from_db()
+    assert faculty_user.email == "still.here@uiit.edu.pk"
+    resp = faculty.get(reverse("faculty_dashboard"))
     assert resp.status_code == 200
 
 

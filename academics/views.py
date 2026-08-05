@@ -43,6 +43,28 @@ def term_list(request):
 
 
 @admin_required
+def term_edit(request, pk):
+    """Edit an existing term (fix a mistyped season/year/dates/current flag).
+
+    Uniqueness on (season, year) and the single-current-term invariant are both
+    enforced by the form/model and stay correct on an edit.
+    """
+    term = get_object_or_404(Term, pk=pk)
+    if request.method == "POST":
+        form = TermForm(request.POST, instance=term)
+        if form.is_valid():
+            term = form.save()
+            record(request.user, "term_edit", term, name=term.name)
+            messages.success(request, f"Term “{term.name}” updated.")
+            return redirect("term_list")
+    else:
+        form = TermForm(instance=term)
+    return render(
+        request, "academics/term_edit.html", {"form": form, "term": term}
+    )
+
+
+@admin_required
 @require_POST
 def term_set_current(request, pk):
     """Mark a term as the current one (clears the flag on every other term)."""
@@ -85,6 +107,33 @@ def course_list(request):
             "terms": Term.objects.all(),
             "selected_term": term_filter or "",
         },
+    )
+
+
+@admin_required
+def course_edit(request, pk):
+    """Edit an existing course (fix a mistype or reassign instructor/term).
+
+    Editing a course does not touch its folder or checklist (the folder is a
+    separate OneToOne row), so an existing folder is neither rebuilt nor
+    duplicated. The (code, section, term) uniqueness check excludes this row.
+    """
+    course = get_object_or_404(Course, pk=pk)
+    if request.method == "POST":
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            course = form.save()
+            record(request.user, "course_edit", course,
+                   code=course.code, section=course.section, term=course.term_id,
+                   instructor=course.instructor_id)
+            messages.success(
+                request, f"Course “{course.code} ({course.section})” updated."
+            )
+            return redirect("course_list")
+    else:
+        form = CourseForm(instance=course)
+    return render(
+        request, "academics/course_edit.html", {"form": form, "course": course}
     )
 
 
