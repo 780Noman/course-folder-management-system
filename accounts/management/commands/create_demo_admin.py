@@ -1,0 +1,47 @@
+"""Create or refresh a demo admin (focal-person) account for evaluation.
+
+Idempotent: matched by a fixed email, so re-running only ever touches the demo
+account and never affects any other user — the real focal-person admin included.
+Backend-only; this changes no templates or UI.
+
+Usage:
+    python manage.py create_demo_admin
+    docker compose -f docker-compose.prod.yml exec web python manage.py create_demo_admin
+"""
+
+from django.core.management.base import BaseCommand
+from django.db import transaction
+
+from accounts.models import User
+
+DEMO_EMAIL = "tester@gmail.com"
+DEMO_NAME = "Demo Admin (Tester)"
+DEMO_PASSWORD = "tester@123"
+
+
+class Command(BaseCommand):
+    help = "Create or refresh the demo admin account (tester@gmail.com)."
+
+    @transaction.atomic
+    def handle(self, *args, **options):
+        user, created = User.objects.update_or_create(
+            email=DEMO_EMAIL,
+            defaults={
+                "name": DEMO_NAME,
+                "role": User.Role.ADMIN,
+                "is_active": True,
+                "is_staff": True,
+                "is_superuser": True,
+            },
+        )
+        # update_or_create can't hash the password, so set it explicitly. This
+        # always resets it, keeping the demo credentials predictable.
+        user.set_password(DEMO_PASSWORD)
+        user.save(update_fields=["password"])
+
+        verb = "Created" if created else "Refreshed"
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"{verb} demo admin {DEMO_EMAIL} (role=ADMIN, active, password reset)."
+            )
+        )

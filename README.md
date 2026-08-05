@@ -74,6 +74,18 @@ docker compose run --rm web python manage.py createsuperuser   # Docker
 Everyone else is onboarded via the invite flow (admin enters a name + email; the
 user receives a single-use, expiring link and sets their own password).
 
+### Demo admin (evaluation only)
+
+For a throwaway focal-person login to try the system, run the idempotent
+`create_demo_admin` command. It creates-or-refreshes a single account
+(`tester@gmail.com` / `tester@123`) and never touches any other user — the real
+admin included. Re-run it any time to reset the demo password.
+
+```bash
+python manage.py create_demo_admin          # local
+docker compose -f docker-compose.prod.yml exec web python manage.py create_demo_admin   # server
+```
+
 ### Building CSS (Tailwind)
 
 CSS is compiled with the Tailwind **standalone CLI** (no Node required). Download
